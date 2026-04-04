@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/vitalis_colors.dart';
 
-/// App bar tùy chỉnh: avatar người chăm sóc, logo chữ, cài đặt.
-class CaregiverTopBar extends StatelessWidget implements PreferredSizeWidget {
+/// Header Caregiver — đặt dưới [SafeArea] của shell, không dùng [AppBar] để tránh notch.
+class CaregiverTopBar extends StatelessWidget {
   const CaregiverTopBar({super.key});
-
-  @override
-  Size get preferredSize => const Size.fromHeight(64);
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +29,7 @@ class CaregiverTopBar extends StatelessWidget implements PreferredSizeWidget {
             child: Text('MedIntel', style: titleStyle),
           ),
           IconButton(
-            onPressed: () {},
+            onPressed: () => context.push('/settings'),
             icon: const Icon(Icons.settings_outlined),
             color: VitalisColors.onSurface,
             style: IconButton.styleFrom(minimumSize: const Size(48, 48)),

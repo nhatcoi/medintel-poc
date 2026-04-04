@@ -19,6 +19,9 @@ abstract final class VitalisColors {
 
   static const Color neutral = Color(0xFF75777B);
 
+  /// Nhãn/icon tab bottom bar khi không chọn (Stitch: xám xanh nhạt).
+  static const Color navBarInactive = Color(0xFF78909C);
+
   // —— Surfaces (DESIGN “No-Line”) ——
   static const Color background = Color(0xFFF8F9FE);
   static const Color surface = Color(0xFFF8F9FE);

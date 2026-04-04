@@ -1,109 +1,161 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'display_fonts.dart';
 import 'vitalis_colors.dart';
 
-/// Typography **Inter** — display → label theo DESIGN.md (ưu tiên người cao tuổi).
+/// Typography theo DESIGN.md — nền Google Fonts, có thể đổi họ font qua [fontId].
 abstract final class VitalisTypography {
   VitalisTypography._();
 
-  static TextTheme textTheme(ColorScheme scheme) {
-    final base = GoogleFonts.interTextTheme();
+  static TextTheme _googleBase(String fontId) {
+    switch (DisplayFontIds.normalize(fontId)) {
+      case DisplayFontIds.roboto:
+        return GoogleFonts.robotoTextTheme();
+      case DisplayFontIds.openSans:
+        return GoogleFonts.openSansTextTheme();
+      case DisplayFontIds.notoSans:
+        return GoogleFonts.notoSansTextTheme();
+      case DisplayFontIds.lato:
+        return GoogleFonts.latoTextTheme();
+      case DisplayFontIds.inter:
+        return GoogleFonts.interTextTheme();
+      default:
+        return GoogleFonts.interTextTheme();
+    }
+  }
+
+  static TextTheme textTheme(ColorScheme scheme, {String fontId = DisplayFontIds.defaultId}) {
+    final base = _googleBase(fontId);
     final on = scheme.onSurface;
+    final variant = VitalisColors.onSurfaceVariant;
+
+    TextStyle t(
+      TextStyle? from, {
+      required double fontSize,
+      required double lineHeight,
+      required FontWeight fontWeight,
+      required Color color,
+      double? letterSpacing,
+    }) {
+      return (from ?? const TextStyle()).copyWith(
+        fontSize: fontSize,
+        height: lineHeight / fontSize,
+        fontWeight: fontWeight,
+        color: color,
+        letterSpacing: letterSpacing,
+      );
+    }
 
     return base.copyWith(
-      displayLarge: GoogleFonts.inter(
+      displayLarge: t(
+        base.displayLarge,
         fontSize: 36,
-        height: 44 / 36,
+        lineHeight: 44,
         fontWeight: FontWeight.w600,
+        color: on,
         letterSpacing: -0.5,
-        color: on,
       ),
-      displayMedium: GoogleFonts.inter(
+      displayMedium: t(
+        base.displayMedium,
         fontSize: 32,
-        height: 40 / 32,
+        lineHeight: 40,
         fontWeight: FontWeight.w600,
         color: on,
       ),
-      displaySmall: GoogleFonts.inter(
+      displaySmall: t(
+        base.displaySmall,
         fontSize: 28,
-        height: 36 / 28,
+        lineHeight: 36,
         fontWeight: FontWeight.w600,
         color: on,
       ),
-      headlineLarge: GoogleFonts.inter(
+      headlineLarge: t(
+        base.headlineLarge,
         fontSize: 28,
-        height: 36 / 28,
+        lineHeight: 36,
         fontWeight: FontWeight.w600,
         color: on,
       ),
-      headlineMedium: GoogleFonts.inter(
+      headlineMedium: t(
+        base.headlineMedium,
         fontSize: 24,
-        height: 32 / 24,
+        lineHeight: 32,
         fontWeight: FontWeight.w600,
         color: on,
       ),
-      headlineSmall: GoogleFonts.inter(
+      headlineSmall: t(
+        base.headlineSmall,
         fontSize: 22,
-        height: 30 / 22,
+        lineHeight: 30,
         fontWeight: FontWeight.w600,
         color: on,
       ),
-      titleLarge: GoogleFonts.inter(
+      titleLarge: t(
+        base.titleLarge,
         fontSize: 22,
-        height: 28 / 22,
+        lineHeight: 28,
         fontWeight: FontWeight.w700,
         color: on,
       ),
-      titleMedium: GoogleFonts.inter(
+      titleMedium: t(
+        base.titleMedium,
         fontSize: 18,
-        height: 24 / 18,
+        lineHeight: 24,
         fontWeight: FontWeight.w600,
         color: on,
       ),
-      titleSmall: GoogleFonts.inter(
+      titleSmall: t(
+        base.titleSmall,
         fontSize: 16,
-        height: 22 / 16,
+        lineHeight: 22,
         fontWeight: FontWeight.w600,
         color: on,
       ),
-      bodyLarge: GoogleFonts.inter(
+      bodyLarge: t(
+        base.bodyLarge,
         fontSize: 18,
-        height: 26 / 18,
+        lineHeight: 26,
         fontWeight: FontWeight.w400,
         color: on,
       ),
-      bodyMedium: GoogleFonts.inter(
+      bodyMedium: t(
+        base.bodyMedium,
         fontSize: 16,
-        height: 24 / 16,
+        lineHeight: 24,
         fontWeight: FontWeight.w400,
         color: on,
       ),
-      bodySmall: GoogleFonts.inter(
+      bodySmall: t(
+        base.bodySmall,
         fontSize: 14,
-        height: 20 / 14,
+        lineHeight: 20,
         fontWeight: FontWeight.w400,
-        color: VitalisColors.onSurfaceVariant,
+        color: variant,
       ),
-      labelLarge: GoogleFonts.inter(
+      labelLarge: t(
+        base.labelLarge,
         fontSize: 14,
-        height: 20 / 14,
+        lineHeight: 20,
         fontWeight: FontWeight.w600,
+        color: on,
         letterSpacing: 0.1,
-        color: on,
       ),
-      labelMedium: GoogleFonts.inter(
+      labelMedium: t(
+        base.labelMedium,
         fontSize: 12,
-        height: 16 / 12,
+        lineHeight: 16,
         fontWeight: FontWeight.w500,
+        color: variant,
         letterSpacing: 0.2,
-        color: VitalisColors.onSurfaceVariant,
       ),
-      labelSmall: GoogleFonts.inter(
+      labelSmall: t(
+        base.labelSmall,
         fontSize: 11,
-        height: 14 / 11,
+        lineHeight: 14,
         fontWeight: FontWeight.w500,
-        color: VitalisColors.onSurfaceVariant,
+        color: variant,
+        letterSpacing: 0.2,
       ),
     );
   }

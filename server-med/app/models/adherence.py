@@ -5,10 +5,9 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import DateTime, ForeignKey, String
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from database.session import Base
+from database.session import Base, GUID
 
 
 class AdherenceStatus(str, enum.Enum):
@@ -21,9 +20,9 @@ class AdherenceStatus(str, enum.Enum):
 class AdherenceLog(Base):
     __tablename__ = "adherence_logs"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(GUID, primary_key=True, default=uuid.uuid4)
     medication_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("medications.id"), index=True
+        GUID, ForeignKey("medications.id"), index=True
     )
     scheduled_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     taken_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

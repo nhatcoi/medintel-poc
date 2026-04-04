@@ -4,4 +4,4 @@ import 'package:med_intel_client/services/ocr_service.dart';
 
 final apiServiceProvider = Provider<ApiService>((ref) => ApiService());
 
-final ocrServiceProvider = Provider<OcrService>((ref) => OcrService());
+final ocrServiceProvider = Provider<OcrService>((ref) => OcrService(ref.watch(apiServiceProvider)));

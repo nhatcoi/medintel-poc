@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary-fixed-dim": "#5191ed",
+                    "outline": "#757b83",
+                    "inverse-on-surface": "#9b9da1",
+                    "tertiary-container": "#9df197",
+                    "secondary-container": "#cbe7f5",
+                    "error-dim": "#67040d",
+                    "secondary-fixed": "#cbe7f5",
+                    "primary-fixed": "#5f9efb",
+                    "on-primary-fixed": "#000000",
+                    "on-secondary-container": "#3c5561",
+                    "surface-container-low": "#f1f4f9",
+                    "secondary-dim": "#3d5762",
+                    "background": "#f8f9fe",
+                    "on-surface": "#2d333a",
+                    "surface-dim": "#d5dae3",
+                    "on-primary": "#f8f8ff",
+                    "surface-container-lowest": "#ffffff",
+                    "on-primary-container": "#002045",
+                    "inverse-primary": "#5f9efb",
+                    "tertiary-fixed": "#9df197",
+                    "on-background": "#2d333a",
+                    "surface-bright": "#f8f9fe",
+                    "surface-container-highest": "#dde3eb",
+                    "surface": "#f8f9fe",
+                    "on-tertiary-fixed": "#00460e",
+                    "on-tertiary-fixed-variant": "#12661e",
+                    "tertiary-dim": "#096119",
+                    "surface-variant": "#dde3eb",
+                    "secondary": "#49636f",
+                    "on-surface-variant": "#5a6067",
+                    "on-error-container": "#6e0a12",
+                    "surface-container-high": "#e4e8f0",
+                    "on-primary-fixed-variant": "#002956",
+                    "on-error": "#fff7f6",
+                    "error": "#a83836",
+                    "on-secondary-fixed-variant": "#455f6b",
+                    "error-container": "#fa746f",
+                    "tertiary": "#1c6d25",
+                    "primary-container": "#5f9efb",
+                    "surface-tint": "#005eb6",
+                    "tertiary-fixed-dim": "#90e28a",
+                    "primary": "#005eb6",
+                    "inverse-surface": "#0c0e11",
+                    "secondary-fixed-dim": "#bdd9e6",
+                    "outline-variant": "#adb2ba",
+                    "surface-container": "#eaeef5",
+                    "on-tertiary-container": "#005c15",
+                    "on-secondary-fixed": "#29434e",
+                    "primary-dim": "#0052a1",
+                    "on-secondary": "#f2faff",
+                    "on-tertiary": "#eaffe2"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Inter"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .glass-panel { backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #dde3eb; border-radius: 10px; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen flex flex-col items-center">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 right-0 z-50 bg-slate-50/80 backdrop-blur-xl dark:bg-slate-900/80">
+<div class="flex justify-between items-center w-full px-6 py-4 max-w-lg mx-auto">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-fixed">
+<img class="w-full h-full object-cover" data-alt="portrait of a gentle smiling elderly woman with soft natural lighting and a warm serene domestic background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD9kwn9aSDiwEg7BJxeZNzBld6q8wPNhDS7xX5nqQbV5XQG6BXtyKLGw-wj0tZ7IttB7eb5M-UKH1hGAO83nUjXJnVmp6B9OzBKs1T1-dnU1qiYlk99ypeGgEbvK88mJX__kGINkNB26oG_kDKDAOPFp2YlGJUJb0LMsfr4UW0T3g-oDsA8-dIOHUh66ULVXGOXY4x_EYd5a3anCaMawKif5f_uVdg4WXFBHP1D5lm3CBnASrdoerxFdWbs6Kx8PNx8uzpBXKcEaf8"/>
+</div>
+<h1 class="text-2xl font-black text-blue-800 dark:text-blue-300 font-inter tracking-tight">MedIntel</h1>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 rounded-full transition-all duration-300 ease-in-out active:scale-95">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Chat Canvas -->
+<main class="flex-1 w-full max-w-lg mx-auto pt-24 pb-48 px-4 flex flex-col gap-8 custom-scrollbar">
+<!-- Welcome Prompt -->
+<div class="flex flex-col items-center text-center px-6 mt-4">
+<div class="w-20 h-20 bg-gradient-to-tr from-primary to-primary-container rounded-xl shadow-lg flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-white text-4xl" data-weight="fill" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+</div>
+<h2 class="text-3xl font-bold text-on-surface mb-2 tracking-tight">How are you feeling, Sarah?</h2>
+<p class="text-on-surface-variant body-lg max-w-[280px]">I'm here to help with your medications and health questions.</p>
+</div>
+<!-- Chat Bubbles Container -->
+<div class="flex flex-col gap-6">
+<!-- AI Message -->
+<div class="flex flex-col items-start gap-2 max-w-[85%]">
+<div class="flex items-center gap-2 mb-1">
+<span class="text-[11px] font-bold uppercase tracking-widest text-primary">MedIntel Assistant</span>
+</div>
+<div class="bg-surface-container-lowest p-5 rounded-tr-xl rounded-br-xl rounded-bl-xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-outline-variant/10">
+<p class="text-on-surface body-lg leading-relaxed">Good morning! I noticed it's time for your 9:00 AM Metformin dose. Have you taken it yet?</p>
+</div>
+<span class="text-[10px] text-outline ml-1">09:05 AM</span>
+</div>
+<!-- User Message -->
+<div class="flex flex-col items-end gap-2 max-w-[85%] ml-auto">
+<div class="bg-primary text-on-primary p-5 rounded-tl-xl rounded-bl-xl rounded-br-xl shadow-md shadow-primary/10">
+<p class="body-lg leading-relaxed">Yes, I just took it with breakfast. But I'm feeling a bit dizzy today.</p>
+</div>
+<span class="text-[10px] text-outline mr-1">09:12 AM</span>
+</div>
+<!-- AI Detailed Response -->
+<div class="flex flex-col items-start gap-2 max-w-[90%]">
+<div class="flex items-center gap-2 mb-1">
+<span class="text-[11px] font-bold uppercase tracking-widest text-primary">MedIntel Assistant</span>
+</div>
+<div class="bg-surface-container-lowest p-5 rounded-tr-xl rounded-br-xl rounded-bl-xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-outline-variant/10">
+<p class="text-on-surface body-lg leading-relaxed mb-4">I've noted that. Dizziness can sometimes happen if your blood sugar is a little low after the dose. </p>
+<div class="bg-surface-container-low rounded-lg p-4 border-l-4 border-primary">
+<p class="text-on-surface-variant text-sm italic italic">Try to sit down and rest for 15 minutes. Would you like me to check if this is a known side effect of your current dosage?</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Quick Replies -->
+<div class="flex flex-wrap gap-2 px-2">
+<button class="bg-secondary-container text-on-secondary-container px-5 py-3 rounded-full text-sm font-semibold hover:bg-primary-fixed transition-colors active:scale-95">
+                Check side effects?
+            </button>
+<button class="bg-secondary-container text-on-secondary-container px-5 py-3 rounded-full text-sm font-semibold hover:bg-primary-fixed transition-colors active:scale-95">
+                Log symptoms
+            </button>
+<button class="bg-secondary-container text-on-secondary-container px-5 py-3 rounded-full text-sm font-semibold hover:bg-primary-fixed transition-colors active:scale-95">
+                Next dose?
+            </button>
+</div>
+</main>
+<!-- Bottom Input Bar & BottomNavBar -->
+<div class="fixed bottom-0 left-0 right-0 max-w-lg mx-auto z-50">
+<!-- Input Field Container -->
+<div class="px-4 pb-4">
+<div class="bg-white/80 backdrop-blur-2xl dark:bg-slate-900/80 rounded-xl shadow-2xl p-2 flex items-center gap-2 border border-white/20">
+<button class="w-12 h-12 flex items-center justify-center text-primary hover:bg-surface-container-low rounded-full transition-all active:scale-90">
+<span class="material-symbols-outlined" data-icon="add_circle">add_circle</span>
+</button>
+<input class="flex-1 bg-transparent border-none focus:ring-0 text-on-surface body-lg placeholder:text-outline/60" placeholder="Ask MedIntel anything..." type="text"/>
+<button class="w-12 h-12 flex items-center justify-center bg-primary text-white rounded-full shadow-lg shadow-primary/20 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="mic" data-weight="fill" style="font-variation-settings: 'FILL' 1;">mic</span>
+</button>
+</div>
+</div>
+<!-- BottomNavBar -->
+<nav class="bg-white/90 backdrop-blur-2xl dark:bg-slate-950/90 fixed bottom-0 left-0 right-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-2 max-w-lg mx-auto shadow-[0_-20px_40px_rgba(45,51,58,0.06)] rounded-t-[2.5rem] border-none">
+<!-- Home -->
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 gap-1 hover:text-blue-500 transition-colors tap-highlight-transparent active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-inter text-[11px] font-semibold uppercase tracking-widest">Home</span>
+</a>
+<!-- Scan -->
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 gap-1 hover:text-blue-500 transition-colors tap-highlight-transparent active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="document_scanner">document_scanner</span>
+<span class="font-inter text-[11px] font-semibold uppercase tracking-widest">Scan</span>
+</a>
+<!-- AI Chat (Active) -->
+<a class="flex flex-col items-center justify-center bg-gradient-to-tr from-blue-600 to-blue-400 text-white rounded-full w-16 h-16 -mt-8 shadow-lg shadow-blue-200/50 dark:shadow-blue-900/20 tap-highlight-transparent active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="smart_toy" data-weight="fill" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+<span class="font-inter text-[9px] font-bold uppercase tracking-tighter">Chat</span>
+</a>
+<!-- History -->
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 gap-1 hover:text-blue-500 transition-colors tap-highlight-transparent active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="font-inter text-[11px] font-semibold uppercase tracking-widest">History</span>
+</a>
+<!-- Care -->
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 gap-1 hover:text-blue-500 transition-colors tap-highlight-transparent active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="groups">groups</span>
+<span class="font-inter text-[11px] font-semibold uppercase tracking-widest">Care</span>
+</a>
+</nav>
+</div>
+</body></html>

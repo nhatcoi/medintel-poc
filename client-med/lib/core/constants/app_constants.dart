@@ -11,4 +11,10 @@ final class AppConstants {
   );
 
   static const Duration apiTimeout = Duration(seconds: 30);
+
+  /// Gửi kèm multipart `/scan/prescription` nếu có; nếu trống, server dùng `DEFAULT_PRESCRIPTION_USER_ID`.
+  static const String prescriptionUserId = String.fromEnvironment(
+    'PRESCRIPTION_USER_ID',
+    defaultValue: '',
+  );
 }

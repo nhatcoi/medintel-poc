@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'display_fonts.dart';
 import 'vitalis_colors.dart';
 import 'vitalis_typography.dart';
 
@@ -12,9 +13,9 @@ final class AppTheme {
   static const double radiusXl = 48;
   static const double buttonVerticalPadding = 24;
 
-  static ThemeData light() {
+  static ThemeData light({String fontId = DisplayFontIds.defaultId}) {
     final scheme = _lightColorScheme;
-    final textTheme = VitalisTypography.textTheme(scheme);
+    final textTheme = VitalisTypography.textTheme(scheme, fontId: fontId);
 
     return ThemeData(
       useMaterial3: true,
