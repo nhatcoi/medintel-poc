@@ -1,0 +1,92 @@
+# Claude Code — cấu hình cá nhân, không commit
+CLAUDE.local.md
+.claude/settings.local.json
+
+.cursor/mcp.json
+.cursor/mcp.local.json
+
+# Môi trường & bí mật
+.env
+.env.*
+!.env.example
+.env.local
+.envrc
+secrets/
+server-med/.env
+client-med/.env
+
+# OS
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*.swp
+*~
+*.bak
+
+# Editor / IDE
+.idea/
+*.iml
+# .vscode/   # bỏ dấu # nếu không muốn commit cấu hình VS Code
+
+# Python (server-med & script ở root)
+.venv/
+venv/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.eggs/
+dist/
+htmlcov/
+.coverage
+coverage.xml
+*.cover
+
+# Node (nếu có tooling JS ở root)
+node_modules/
+
+# Flutter / Dart (bổ sung cho toàn repo; client-med vẫn có .gitignore riêng)
+**/doc/api/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+**/build/
+**/coverage/
+app.*.symbols
+app.*.map.json
+
+# Android / iOS build cục bộ (Flutter)
+**/android/.gradle/
+**/android/captures/
+**/android/local.properties
+**/android/**/GeneratedPluginRegistrant.java
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/ServiceDefinitions.json
+**/ios/Runner/GeneratedPluginRegistrant.*
+
+# Logs & DB cục bộ
+*.log
+logs/
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# Docker — không commit volume mount tùy chỉnh chứa data
+data-med/pgdata/
+
+# Tài liệu / Office temp
+~$*
+*.tmp

@@ -1,0 +1,19 @@
+{
+  "doctor_name": "BS. Demo",
+  "issued_at": "2026-03-01",
+  "medications": [
+    {
+      "name": "Metformin 500mg",
+      "dosage": "500 mg",
+      "frequency": "2 lần/ngày sau ăn",
+      "instructions": "Uống cùng bữa sáng và tối"
+    },
+    {
+      "name": "Amlodipin 5mg",
+      "dosage": "5 mg",
+      "frequency": "1 lần/ngày",
+      "instructions": "Buổi sáng"
+    }
+  ],
+  "note": "Dữ liệu giả lập cho test OCR/parsing — không dùng làm tư vấn y tế."
+}

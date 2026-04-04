@@ -1,0 +1,12 @@
+-- RAG / vector (tùy chọn — cần CREATE EXTENSION vector;)
+-- Kích thước vector đổi theo model embedding (ví dụ 1536 cho OpenAI small)
+
+-- CREATE TABLE drug_document_chunks (
+--     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+--     drug_name VARCHAR(512) NOT NULL,
+--     content TEXT NOT NULL,
+--     source VARCHAR(1024),
+--     embedding vector(1536),
+--     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+-- );
+-- CREATE INDEX ON drug_document_chunks USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);

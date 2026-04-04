@@ -1,0 +1,23 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: medintel
+      POSTGRES_PASSWORD: medintel
+      POSTGRES_DB: medintel
+    ports:
+      - "5432:5432"
+    volumes:
+      - medintel_pgdata:/var/lib/postgresql/data
+      - ./schema/001_extensions.sql:/docker-entrypoint-initdb.d/01_extensions.sql:ro
+      - ./schema/002_core_tables.sql:/docker-entrypoint-initdb.d/02_core_tables.sql:ro
+      - ./seed/001_demo.sql:/docker-entrypoint-initdb.d/03_seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medintel -d medintel"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  medintel_pgdata:
