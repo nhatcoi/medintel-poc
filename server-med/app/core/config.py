@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     llm_base_url: str = "https://rftzycu.9router.com/v1/chat/completions"
     llm_api_key: str = ""
     llm_model: str = "combo-1"
+    # Profile UUID fallback khi scan không gửi user_id (seed demo trong main.py)
     default_prescription_user_id: str = "00000000-0000-0000-0000-000000000001"
 
     # HTTP logging (middleware)

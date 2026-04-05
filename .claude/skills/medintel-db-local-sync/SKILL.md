@@ -11,6 +11,7 @@ description: >-
 ## Nguồn chuẩn
 
 - **`db-design.md`** (root repo): toàn bộ bảng và quy ước đặt tên sau khi lược IAM.
+- **SQLAlchemy 2.0:** `server-med/app/models/` — lớp ORM theo từng nhóm (`profile.py`, `drug_catalog.py`, `medical.py`, `treatment_medication.py`, …); kết nối `database/session.py` (`engine`, `SessionLocal`, `get_db`); `main.py` gọi `create_all` khi `create_tables_on_startup`.
 
 Khi mâu thuẫn với code cũ (JWT, `users`, `user_id`): ưu tiên **`db-design.md`** cho hướng mới; ghi rõ nếu backend Flutter vẫn đang transition.
 
@@ -31,6 +32,12 @@ Khi mâu thuẫn với code cũ (JWT, `users`, `user_id`): ưu tiên **`db-desig
 | `logged_by` | `logged_by_profile_id` |
 | `created_by` / `user_id` (care_group) | `created_by_profile_id` / `profile_id` |
 | `total_users`, `active_users`, `new_users` | `total_profiles`, `active_profiles`, `new_profiles` |
+
+## Quy ước ORM (Python)
+
+- Thuộc tính Python thường là **`id`** nhưng cột DB giữ tên **`profile_id` / `record_id` / `medication_id`** qua `mapped_column("profile_id", ...)`.
+- **`medical_records`:** thêm `scan_image_url`, `scan_raw_ocr` cho pipeline OCR (mở rộng so với bản ERD tối thiểu).
+- **Luồng quét đơn:** `prescription_scan_service` ghi `MedicalRecord` → `TreatmentPeriod` → `Medication` → `MedicationSchedule`; API vẫn trả `prescription_id` = `record_id`.
 
 ## Khi agent viết SQL / migration
 

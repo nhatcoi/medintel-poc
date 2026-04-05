@@ -40,7 +40,9 @@ class CareGroup(Base, TimestampMixin):
 class CareGroupMember(Base):
     __tablename__ = "care_group_members"
 
-    id: Mapped[uuid.UUID] = mapped_column("member_id", GUID, primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(
+        "member_id", GUID, primary_key=True, default=uuid.uuid4
+    )
     group_id: Mapped[uuid.UUID] = mapped_column(GUID, ForeignKey("care_groups.group_id"), index=True)
     profile_id: Mapped[uuid.UUID] = mapped_column(GUID, ForeignKey("profiles.profile_id"), index=True)
     role: Mapped[str | None] = mapped_column(String(64), nullable=True)
