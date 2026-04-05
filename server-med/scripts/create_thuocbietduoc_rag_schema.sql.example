@@ -4,8 +4,8 @@
 -- Cài extension (một lần trên cluster):
 --   CREATE EXTENSION IF NOT EXISTS vector;
 --
--- Chiều vector: chỉnh embedding_dim theo model (vd. OpenAI text-embedding-3-small = 1536,
--- text-embedding-3-large = 3072, nomic-embed = 768).
+-- Chiều vector: chỉnh embedding_dim theo model (vd. paraphrase-multilingual-MiniLM-L12-v2 = 384,
+-- OpenAI text-embedding-3-small = 1536, text-embedding-3-large = 3072).
 
 BEGIN;
 
@@ -49,8 +49,8 @@ CREATE TABLE IF NOT EXISTS tbdf_drug_chunks (
     section        TEXT NOT NULL DEFAULT 'body',
     content        TEXT NOT NULL,
     token_estimate INTEGER,
-    embedding_model TEXT NOT NULL DEFAULT 'text-embedding-3-small',
-    embedding      vector(1536),
+    embedding_model TEXT NOT NULL DEFAULT 'paraphrase-multilingual-MiniLM-L12-v2',
+    embedding      vector(384),
     content_tsv    tsvector GENERATED ALWAYS AS (to_tsvector('simple', coalesce(content, ''))) STORED,
     created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT uq_tbdf_chunk_place UNIQUE (drug_id, chunk_ordinal, section)

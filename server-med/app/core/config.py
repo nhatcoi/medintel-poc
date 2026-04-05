@@ -13,6 +13,11 @@ class Settings(BaseSettings):
     llm_base_url: str = "https://rftzycu.9router.com/v1/chat/completions"
     llm_api_key: str = ""
     llm_model: str = "combo-1"
+    # Embedding (sentence-transformers local model)
+    embedding_model: str = "paraphrase-multilingual-MiniLM-L12-v2"
+    embedding_dim: int = 384
+    # RAG
+    rag_top_k: int = 8
     # Profile UUID fallback khi scan không gửi user_id (seed demo trong main.py)
     default_prescription_user_id: str = "00000000-0000-0000-0000-000000000001"
 

@@ -8,6 +8,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from ai.chatbot import reply as llm_reply
+from ai.rag.retrieval import build_rag_context, hybrid_search
 from app.core.config import settings
 from app.models.chat import ChatMessage, ChatSession
 from app.repositories.profile_repository import get_by_id
@@ -69,6 +70,17 @@ def _persist_agentic_turn(
     return chat_session.id
 
 
+async def _resolve_rag_context(db: Session, user_text: str) -> str | None:
+    """Tìm kiến thức dược liệu liên quan qua RAG (hybrid search)."""
+    try:
+        results = await hybrid_search(db, user_text)
+        if results:
+            return build_rag_context(results)
+    except Exception:
+        pass
+    return None
+
+
 def _resolve_medication_context(db: Session, body: ChatRequest) -> str | None:
     if not (body.include_medication_context and body.profile_id and body.profile_id.strip()):
         return None
@@ -88,6 +100,9 @@ async def preview_chat_message(db: Session, body: ChatRequest) -> ChatResponse:
         raise HTTPException(status_code=400, detail="Text must not be empty")
 
     extra_context = _resolve_medication_context(db, body)
+    rag_context = await _resolve_rag_context(db, text)
+    if rag_context:
+        extra_context = f"{extra_context}\n\n{rag_context}" if extra_context else rag_context
 
     try:
         turn = await llm_reply(text, extra_context=extra_context)
@@ -116,6 +131,9 @@ async def process_chat_message(db: Session, body: ChatRequest) -> ChatResponse:
         raise HTTPException(status_code=400, detail="Text must not be empty")
 
     extra_context = _resolve_medication_context(db, body)
+    rag_context = await _resolve_rag_context(db, text)
+    if rag_context:
+        extra_context = f"{extra_context}\n\n{rag_context}" if extra_context else rag_context
 
     try:
         turn = await llm_reply(text, extra_context=extra_context)

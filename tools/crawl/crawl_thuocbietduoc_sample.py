@@ -11,6 +11,8 @@ Lưu ý pháp lý / đạo đức:
 Chạy:
   python crawl_thuocbietduoc_sample.py --pages 1
   python crawl_thuocbietduoc_sample.py --pages 1 --chi-tiet
+  python crawl_thuocbietduoc_sample.py --page-from 2 --page-to 100 --chi-tiet
+  python crawl_thuocbietduoc_sample.py --page-from 2 --pages 100 --chi-tiet
   # Ghi mặc định: data/thuocbietduoc_export_<pages>.json (vd. --pages 1 → ..._1.json)
   python crawl_thuocbietduoc_sample.py --pages 1 --chi-tiet --limit 3 --delay 1.5 -o /tmp/out.json
 """
@@ -31,9 +33,11 @@ from urllib.request import Request, urlopen
 _SCRIPT_DIR = Path(__file__).resolve().parent
 
 
-def default_export_path(pages: int) -> Path:
-    """Tên file mặc định theo số trang drgsearch (--pages)."""
-    return _SCRIPT_DIR / "data" / f"thuocbietduoc_export_{pages}.json"
+def default_export_path(page_from: int, page_to: int) -> Path:
+    """Tên file mặc định theo khoảng trang drgsearch."""
+    if page_from == 1 and page_to == 1:
+        return _SCRIPT_DIR / "data" / "thuocbietduoc_export_1.json"
+    return _SCRIPT_DIR / "data" / f"thuocbietduoc_export_p{page_from}_p{page_to}.json"
 
 
 BASE = "https://thuocbietduoc.com.vn"
@@ -432,7 +436,26 @@ def parse_detail_page(html: str) -> dict:
 
 def main() -> None:
     p = argparse.ArgumentParser(description="Cào mẫu danh sách + chi tiết thuốc Thuốc Biệt Dược.")
-    p.add_argument("--pages", type=int, default=1, help="Số trang drgsearch (bắt đầu từ 1).")
+    p.add_argument(
+        "--pages",
+        type=int,
+        default=1,
+        help="Trang kết thúc drgsearch khi không dùng --page-to (cào page-from .. pages). Mặc định với --page-from=1: trang 1..N.",
+    )
+    p.add_argument(
+        "--page-from",
+        type=int,
+        default=1,
+        metavar="N",
+        help="Trang danh sách bắt đầu (>=1).",
+    )
+    p.add_argument(
+        "--page-to",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Trang danh sách kết thúc (>= page-from). Nếu bỏ trống, dùng giá trị --pages làm trang cuối.",
+    )
     p.add_argument(
         "--delay",
         type=float,
@@ -469,26 +492,40 @@ def main() -> None:
         help="Timeout HTTP mỗi request (giây). Giảm nếu treo lâu ở recv (mặc định 45).",
     )
     args = p.parse_args()
+    page_from = max(1, args.page_from)
+    page_to = args.page_to if args.page_to is not None else args.pages
+    if page_to < page_from:
+        raise SystemExit(f"--page-to ({page_to}) phải >= --page-from ({page_from}).")
+
     all_rows: list[dict] = []
-    for page in range(1, args.pages + 1):
-        q = f"{BASE}{LIST_PATH}" if page == 1 else f"{BASE}{LIST_PATH}?page={page}"
-        try:
-            html = fetch(
-                q,
-                delay_s=args.delay if page > 1 else 0,
-                timeout_sec=args.timeout,
-            )
-        except (HTTPError, URLError, TimeoutError, OSError) as e:
-            raise SystemExit(f"Lỗi tải {q}: {e}") from e
-        rows = parse_list_page(html)
-        if not rows:
-            raise SystemExit(f"Không parse được thuốc nào từ {q} (có thể đổi HTML).")
-        all_rows.extend(rows)
+    export_ngat_som = False
+    try:
+        for i, page in enumerate(range(page_from, page_to + 1)):
+            q = f"{BASE}{LIST_PATH}" if page == 1 else f"{BASE}{LIST_PATH}?page={page}"
+            print(f"[danh sách trang {page}/{page_to}] {q}", file=sys.stderr, flush=True)
+            try:
+                html = fetch(
+                    q,
+                    delay_s=args.delay if (page > 1 or i > 0) else 0,
+                    timeout_sec=args.timeout,
+                )
+            except (HTTPError, URLError, TimeoutError, OSError) as e:
+                raise SystemExit(f"Lỗi tải {q}: {e}") from e
+            rows = parse_list_page(html)
+            if not rows:
+                raise SystemExit(f"Không parse được thuốc nào từ {q} (có thể đổi HTML).")
+            all_rows.extend(rows)
+    except KeyboardInterrupt:
+        export_ngat_som = True
+        print(
+            "\nĐã nhận Ctrl+C khi tải trang danh sách — dừng, giữ các trang đã gom được.",
+            file=sys.stderr,
+            flush=True,
+        )
 
     if args.limit and args.limit > 0:
         all_rows = all_rows[: args.limit]
 
-    export_ngat_som = False
     if args.chi_tiet:
         n = len(all_rows)
         try:
@@ -529,7 +566,7 @@ def main() -> None:
 
     write_path: Path | None = args.output
     if args.chi_tiet and write_path is None and not args.stdout:
-        write_path = default_export_path(args.pages)
+        write_path = default_export_path(page_from, page_to)
     elif not args.chi_tiet:
         write_path = args.output
 

@@ -1,5 +1,17 @@
 """RAG dược liệu — pgvector + embedding."""
 
+from ai.rag.retrieval import (
+    RagResult,
+    build_rag_context,
+    hybrid_search,
+    text_search,
+    vector_search,
+)
 
-def answer_with_context(_question: str, *, _user_id: str) -> str:
-    raise NotImplementedError("Truy vấn vector DB + neo nguồn dược")
+__all__ = [
+    "RagResult",
+    "build_rag_context",
+    "hybrid_search",
+    "text_search",
+    "vector_search",
+]
