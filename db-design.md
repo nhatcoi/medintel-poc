@@ -76,83 +76,9 @@
 
 ---
 
-## 2. National Drug Catalog
+## 2. Tham chiếu dược (không còn catalog DAV)
 
-### Bảng `national_drugs`
-
-`drug_id`: UUID [PK]
-
-`registration_number`: VARCHAR(50) [UQ]
-
-`old_registration_number`: VARCHAR(50) [NN]
-
-`drug_name`: VARCHAR(255) [NN]
-
-`drug_name_no_diacritics`: VARCHAR(255)
-
-`drug_code`: VARCHAR(50)
-
-`type_id`: INTEGER [FK]
-
-`group_id`: INTEGER [FK]
-
-`is_active`: BOOLEAN
-
-`is_expired`: BOOLEAN
-
-`is_permitted`: BOOLEAN
-
-`is_registration_withdrawn`: BOOLEAN
-
-`external_id`: INTEGER [UQ]
-
-`created_at`: TIMESTAMP
-
-`updated_at`: TIMESTAMP
-
-### Bảng `drug_basic_info`
-
-`info_id`: UUID [PK]
-
-`drug_id`: UUID [FK, NN]
-
-`active_ingredient`: TEXT
-
-`concentration`: VARCHAR(255)
-
-`form_id`: INTEGER [FK]
-
-`route_id`: INTEGER [FK]
-
-`packaging`: TEXT
-
-`standard_id`: INTEGER [FK]
-
-`shelf_life`: VARCHAR(50)
-
-### Bảng `drug_registration_info`
-
-`registration_id`: UUID [PK]
-
-`drug_id`: UUID [FK, NN]
-
-`registration_issue_date`: DATE
-
-`registration_renewal_date`: DATE
-
-`registration_expiry_date`: DATE
-
-`decision_number`: VARCHAR(100)
-
-`decision_url`: TEXT
-
-`issue_batch`: VARCHAR(50)
-
-`renewal_application_number`: VARCHAR(100)
-
-`renewal_application_received`: DATE
-
-`renewal_receipt_url`: TEXT
+**Script gỡ DB (nếu còn bảng cũ):** `server-med/scripts/drop_dav_national_drug_catalog.sql` — xóa nếu tồn tại: `national_drugs`, `drug_basic_info`, `drug_registration_info`, `pharmaceutical_companies`, `countries`, `drug_groups`, `dosage_forms`, `quality_standards`, và cột `medications.national_drug_id`. ORM vẫn định nghĩa `countries` / `drug_groups` / `pharmaceutical_companies`; chạy lại app (`create_all`) sẽ tạo lại các bảng đó rỗng nếu cần.
 
 ### Bảng `pharmaceutical_companies`
 
@@ -197,28 +123,6 @@
 `group_name`: VARCHAR(255) [NN]
 
 `parent_group_id`: INTEGER [FK]
-
-`description`: TEXT
-
-`created_at`: TIMESTAMP
-
-### Bảng `quality_standards`
-
-`standard_id`: SERIAL [PK]
-
-`standard_code`: VARCHAR(20) [UQ, NN]
-
-`standard_name`: VARCHAR(255)
-
-`description`: TEXT
-
-`created_at`: TIMESTAMP
-
-### Bảng `dosage_forms`
-
-`form_id`: SERIAL [PK]
-
-`form_name`: VARCHAR(100) [UQ, NN]
 
 `description`: TEXT
 
@@ -289,8 +193,6 @@
 `medication_id`: UUID [PK]
 
 `period_id`: UUID [FK]
-
-`national_drug_id`: UUID [FK]
 
 `medication_name`: VARCHAR(255) [NN]
 

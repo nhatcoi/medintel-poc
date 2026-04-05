@@ -2,16 +2,7 @@
 
 from app.models.profile import Device, Profile
 from app.models.audit_log import AuditLog
-from app.models.drug_catalog import (
-    Country,
-    DosageForm,
-    DrugBasicInfo,
-    DrugGroup,
-    DrugRegistrationInfo,
-    NationalDrug,
-    PharmaceuticalCompany,
-    QualityStandard,
-)
+from app.models.drug_catalog import Country, DrugGroup, PharmaceuticalCompany
 from app.models.medical import DiseaseCategory, MedicalRecord, TreatmentPeriod
 from app.models.treatment_medication import Medication, MedicationLog, MedicationSchedule
 from app.models.chat import ChatMessage, ChatSession
@@ -25,12 +16,7 @@ __all__ = [
     "AuditLog",
     "Country",
     "DrugGroup",
-    "DosageForm",
-    "QualityStandard",
     "PharmaceuticalCompany",
-    "NationalDrug",
-    "DrugBasicInfo",
-    "DrugRegistrationInfo",
     "DiseaseCategory",
     "MedicalRecord",
     "TreatmentPeriod",

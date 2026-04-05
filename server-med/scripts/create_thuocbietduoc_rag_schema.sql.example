@@ -1,0 +1,77 @@
+-- Gợi ý schema Postgres + pgvector cho thuốc cào từ thuocbietduoc.com.vn (~65k bản ghi → RAG).
+-- Đổi tên bảng/tiền tố tbdf_ nếu muốn. Sao lưu DB trước khi chạy trên môi trường thật.
+--
+-- Cài extension (một lần trên cluster):
+--   CREATE EXTENSION IF NOT EXISTS vector;
+--
+-- Chiều vector: chỉnh embedding_dim theo model (vd. OpenAI text-embedding-3-small = 1536,
+-- text-embedding-3-large = 3072, nomic-embed = 768).
+
+BEGIN;
+
+CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+-- 1) Một dòng = một trang thuốc (định danh theo id site + URL).
+CREATE TABLE IF NOT EXISTS tbdf_drugs (
+    drug_id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    source_site       TEXT NOT NULL DEFAULT 'thuocbietduoc.com.vn',
+    external_id       INTEGER NOT NULL,
+    canonical_url     TEXT NOT NULL,
+    slug              TEXT,
+    name_display      TEXT NOT NULL,
+    registration_no   TEXT,
+    dosage_form       TEXT,
+    ingredient_short  TEXT,
+    category          TEXT,
+    -- Toàn bộ object chi_tiet_day_du + các field list (ten, url…) để không mất dữ liệu khi site đổi HTML.
+    raw_document      JSONB NOT NULL,
+    -- Văn bản “đã ghép” để chunk/embed (tuỳ pipeline; có thể cập nhật sau khi chuẩn hoá).
+    normalized_text   TEXT,
+    text_sha256       TEXT,
+    crawled_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT uq_tbdf_site_ext UNIQUE (source_site, external_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_tbdf_drugs_reg ON tbdf_drugs (registration_no);
+CREATE INDEX IF NOT EXISTS idx_tbdf_drugs_name_trgm ON tbdf_drugs USING gin (name_display gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_tbdf_drugs_raw ON tbdf_drugs USING gin (raw_document jsonb_path_ops);
+
+COMMENT ON TABLE tbdf_drugs IS 'Nguồn: crawl thuocbietduoc — chỉ nghiên cứu; không thay thế tờ hướng dẫn chính thức / BYT.';
+
+-- 2) Chunk RAG: nhiều dòng / một thuốc; embedding gắn từng chunk.
+--    section: ví dụ summary | chi_dinh | duoc_luc | lieu_luong | tuong_tac | ...
+CREATE TABLE IF NOT EXISTS tbdf_drug_chunks (
+    chunk_id       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    drug_id        UUID NOT NULL REFERENCES tbdf_drugs (drug_id) ON DELETE CASCADE,
+    chunk_ordinal  INTEGER NOT NULL,
+    section        TEXT NOT NULL DEFAULT 'body',
+    content        TEXT NOT NULL,
+    token_estimate INTEGER,
+    embedding_model TEXT NOT NULL DEFAULT 'text-embedding-3-small',
+    embedding      vector(1536),
+    content_tsv    tsvector GENERATED ALWAYS AS (to_tsvector('simple', coalesce(content, ''))) STORED,
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT uq_tbdf_chunk_place UNIQUE (drug_id, chunk_ordinal, section)
+);
+
+CREATE INDEX IF NOT EXISTS idx_tbdf_chunks_drug ON tbdf_drug_chunks (drug_id);
+CREATE INDEX IF NOT EXISTS idx_tbdf_chunks_section ON tbdf_drug_chunks (section);
+CREATE INDEX IF NOT EXISTS idx_tbdf_chunks_tsv ON tbdf_drug_chunks USING gin (content_tsv);
+
+-- Vector index: HNSW (PostgreSQL 16+ với pgvector). Tạo sau khi đã nạp một phần embedding;
+-- có thể dùng index một phần: WHERE embedding IS NOT NULL.
+CREATE INDEX IF NOT EXISTS idx_tbdf_chunks_embedding_hnsw
+    ON tbdf_drug_chunks
+    USING hnsw (embedding vector_cosine_ops)
+    WHERE (embedding IS NOT NULL);
+
+COMMIT;
+
+-- Gợi ý truy vấn tương đồng (cosine): nhập query_embedding từ ứng dụng.
+-- SELECT chunk_id, drug_id, section, left(content, 200), 1 - (embedding <=> $1::vector) AS sim
+-- FROM tbdf_drug_chunks
+-- WHERE embedding IS NOT NULL
+-- ORDER BY embedding <=> $1::vector
+-- LIMIT 20;

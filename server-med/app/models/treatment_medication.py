@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import date, datetime, time
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, Numeric, String, Text, Time
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -14,7 +14,6 @@ from database.session import Base, GUID
 from app.models.mixins import TimestampMixin
 
 if TYPE_CHECKING:
-    from app.models.drug_catalog import NationalDrug
     from app.models.medical import TreatmentPeriod
 
 
@@ -24,9 +23,6 @@ class Medication(Base, TimestampMixin):
     id: Mapped[uuid.UUID] = mapped_column("medication_id", GUID, primary_key=True, default=uuid.uuid4)
     period_id: Mapped[uuid.UUID] = mapped_column(
         GUID, ForeignKey("treatment_periods.period_id"), nullable=False, index=True
-    )
-    national_drug_id: Mapped[uuid.UUID | None] = mapped_column(
-        GUID, ForeignKey("national_drugs.drug_id"), nullable=True, index=True
     )
     medication_name: Mapped[str] = mapped_column(String(255))
     active_ingredient: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -55,7 +51,6 @@ class Medication(Base, TimestampMixin):
     treatment_period: Mapped["TreatmentPeriod"] = relationship(
         "TreatmentPeriod", back_populates="medications"
     )
-    national_drug: Mapped[Optional["NationalDrug"]] = relationship("NationalDrug")
     schedules: Mapped[list["MedicationSchedule"]] = relationship(
         "MedicationSchedule", back_populates="medication", cascade="all, delete-orphan"
     )

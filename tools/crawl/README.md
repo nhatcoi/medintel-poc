@@ -1,81 +1,50 @@
-# Crawl DAV → JSON / PostgreSQL
+# Crawl mẫu thuốc (Thuốc Biệt Dược)
 
-## Bắt buộc: virtualenv (macOS / Homebrew / PEP 668)
+Thư mục chỉ còn script **`crawl_thuocbietduoc_sample.py`**: cào danh sách/chi tiết từ thuocbietduoc.com.vn, ghi JSON (không import Postgres, không pipeline DAV).
 
-Python từ Homebrew thường báo **`externally-managed-environment`** nếu bạn chạy `pip install` trực tiếp — **phải dùng venv** (không nên `--break-system-packages`).
+## Virtualenv (macOS / Homebrew / PEP 668)
 
-**Lần đầu** — chọn một trong hai:
-
-```bash
-cd tools/crawl
-chmod +x setup_venv.sh
-./setup_venv.sh
-source .venv/bin/activate
-```
-
-Hoặc tay:
+Script chỉ dùng thư viện chuẩn Python; venv là tùy chọn nhưng nên dùng nếu bạn cài thêm gói sau này.
 
 ```bash
 cd tools/crawl
 python3 -m venv .venv
 source .venv/bin/activate
-python3 -m pip install -r requirements.txt
 ```
 
-Lưu ý: **`source venv/bin/activate` chỉ chạy được sau khi đã tạo thư mục venv** (`python3 -m venv venv` hoặc `.venv` như trên). Nếu chưa tạo → `no such file`.
-
-## `python` / `pip` không tìm thấy
-
-Dùng **`python3`**; sau khi `source .venv/bin/activate` có thể dùng luôn `python` trong venv.
-
-## Đừng copy dòng có `...`
-
-Trong hướng dẫn cũ có đoạn `python3 dav_postgres_import.py ...` — **`...` không phải tham số thật**, argparse sẽ báo `unrecognized arguments`. Dùng lệnh đầy đủ, ví dụ:
+Hoặc:
 
 ```bash
-python3 dav_postgres_import.py --crawl --max-pages 1 --items-per-page 50 --delay 0.5
-```
-
-## Import vào Postgres (`server-med` ORM)
-
-Bật Postgres + tạo DB (vd. `medintel_orm`), chạy FastAPI một lần để có bảng, hoặc `create_all`.
-
-```bash
+chmod +x setup_venv.sh
+./setup_venv.sh
 source .venv/bin/activate
-export DATABASE_URL=postgresql+psycopg2://medintel:medintel@localhost:5432/medintel_orm
-python3 dav_postgres_import.py --crawl --max-pages 1 --items-per-page 50
 ```
 
-Hoặc để script đọc `../../server-med/.env` (có `DATABASE_URL`).
-
-## `run.sh` (tạo thư mục `venv/`)
+## Chạy
 
 ```bash
-./run.sh --test
+python3 crawl_thuocbietduoc_sample.py --pages 1
+python3 crawl_thuocbietduoc_sample.py --pages 1 --chi-tiet --limit 5 --delay 1.5
 ```
 
-Script tạo **`venv/`** (không phải `.venv`). Nếu bạn dùng `setup_venv.sh` thì thư mục là **`.venv`**.
+File mặc định: `data/thuocbietduoc_export_<pages>.json` (khi có `--chi-tiet` và không chỉ `-o`).
 
-## Cron — kéo dần cả danh mục (~53k bản ghi)
+## Gỡ bảng tham chiếu dược / catalog trên Postgres
 
-Mỗi lần chạy chỉ lấy **một “trang”** API (theo `items-per-page`), ghi `next_skip` vào `data/dav_import_state.json`. Lặp qua cron cho đến khi `completed: true`.
+Script xóa (nếu tồn tại): `national_drugs`, `drug_basic_info`, `drug_registration_info`, `pharmaceutical_companies`, `countries`, `drug_groups`, `dosage_forms`, `quality_standards`, và cột `medications.national_drug_id`. Chạy sau khi backup:
 
 ```bash
-chmod +x cron_import_chunk.sh
-# thử tay:
-./cron_import_chunk.sh
-# hoặc:
-python3 dav_postgres_import.py --resume --items-per-page 500 --delay 1.0
+# Chuỗi kết nối dạng postgresql://user:pass@host:port/db (không dùng tiền tố sqlalchemy +psycopg2).
+psql "postgresql://medintel:medintel@localhost:5432/medintel_orm" -f ../../server-med/scripts/drop_dav_national_drug_catalog.sql
 ```
 
-Biến môi trường tùy chọn: `CRAWL_ITEMS_PER_PAGE` (mặc định 500), `CRAWL_DELAY` (1.0 s), `CRAWL_BATCH_COMMIT` (100).
+(hoặc `-f` trỏ đúng đường dẫn tới `server-med/scripts/drop_dav_national_drug_catalog.sql`).
 
-**Bắt đầu lại từ đầu:** `python3 dav_postgres_import.py --reset-state` (xóa file state mặc định).
+## `run.sh`
 
-**Ví dụ crontab** (mỗi 15 phút, log ra file):
+Tạo `venv/` và chạy mẫu; mọi tham số truyền tiếp cho `crawl_thuocbietduoc_sample.py`:
 
-```cron
-*/15 * * * * CRAWL_ITEMS_PER_PAGE=500 CRAWL_DELAY=1.0 /đường/dẫn/đầy/đủ/tools/crawl/cron_import_chunk.sh >> /đường/dẫn/tools/crawl/data/cron_dav_import.log 2>&1
+```bash
+./run.sh --pages 1
+./run.sh --pages 1 --chi-tiet --delay 1.0
 ```
-
-Lưu ý: cookie/header DAV trong `crawl_dav_api.py` hết hạn thì chunk sẽ lỗi hoặc không có item — cần cập nhật và chạy lại.

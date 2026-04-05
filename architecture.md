@@ -310,9 +310,6 @@ PostgreSQL
    ├ schedules
    ├ logs
    │
-   ├ national_drugs
-   ├ drug_basic_info
-   │
    └ drug_embeddings
           embedding VECTOR
 ```
