@@ -1,4 +1,4 @@
-"""Chuẩn hoá kết quả LLM và ghi Prescription + Medication + MedicationSchedule."""
+"""Chuẩn hoá kết quả LLM và ghi medical_records → treatment_periods → medications → schedules."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ from datetime import UTC, date, datetime, time
 
 from sqlalchemy.orm import Session
 
-from app.models.medication import Medication, MedicationSchedule
-from app.models.prescription import Prescription
+from app.models.medical import MedicalRecord, TreatmentPeriod
+from app.models.treatment_medication import Medication, MedicationSchedule
 from app.schemas.scan import ScanResult, SavedMedicationRef
 
 
@@ -70,32 +70,48 @@ def _parse_hh_mm(t: str) -> time | None:
 def persist_scan_result(
     db: Session,
     *,
-    user_id: uuid.UUID,
+    profile_id: uuid.UUID,
     scan: ScanResult,
 ) -> tuple[uuid.UUID, list[SavedMedicationRef]]:
-    """Tạo bản ghi đơn thuốc và lịch uống thuốc; commit trong hàm."""
+    """Tạo bản ghi điều trị từ OCR; `prescription_id` API = medical_records.record_id; commit trong hàm."""
     issued_at = _parse_issued_at(scan.issued_date)
+    start_d = issued_at.date() if issued_at else date.today()
 
-    rx = Prescription(
-        user_id=user_id,
-        image_url=None,
-        raw_ocr_text=scan.raw_text,
-        doctor_name=scan.doctor_name,
-        issued_at=issued_at,
-        valid_until=None,
+    notes_parts: list[str] = []
+    if scan.patient_name:
+        notes_parts.append(f"Bệnh nhân (OCR): {scan.patient_name}")
+
+    record = MedicalRecord(
+        profile_id=profile_id,
+        disease_name="Từ đơn thuốc (OCR)",
+        treatment_start_date=start_d,
+        scan_raw_ocr=scan.raw_text,
+        notes="\n".join(notes_parts) if notes_parts else None,
     )
-    db.add(rx)
+    db.add(record)
+    db.flush()
+
+    period = TreatmentPeriod(
+        record_id=record.id,
+        period_name="Đơn quét",
+        start_date=start_d,
+        status="active",
+    )
+    db.add(period)
     db.flush()
 
     saved: list[SavedMedicationRef] = []
 
     for item in scan.medications:
         med = Medication(
-            prescription_id=rx.id,
-            name=item.name,
+            period_id=period.id,
+            medication_name=item.name,
             dosage=item.dosage,
             frequency=item.frequency,
             instructions=item.instructions,
+            start_date=start_d,
+            prescribing_doctor=scan.doctor_name,
+            prescription_date=start_d if issued_at else None,
         )
         db.add(med)
         db.flush()
@@ -109,8 +125,7 @@ def persist_scan_result(
             db.add(
                 MedicationSchedule(
                     medication_id=med.id,
-                    time_of_day=tod,
-                    days_of_week=None,
+                    scheduled_time=tod,
                 )
             )
             added_schedule = True
@@ -118,12 +133,11 @@ def persist_scan_result(
             db.add(
                 MedicationSchedule(
                     medication_id=med.id,
-                    time_of_day=time(8, 0),
-                    days_of_week=None,
+                    scheduled_time=time(8, 0),
                 )
             )
 
-        saved.append(SavedMedicationRef(id=str(med.id), name=med.name))
+        saved.append(SavedMedicationRef(id=str(med.id), name=item.name))
 
     try:
         db.commit()
@@ -131,5 +145,5 @@ def persist_scan_result(
         db.rollback()
         raise
 
-    db.refresh(rx)
-    return rx.id, saved
+    db.refresh(record)
+    return record.id, saved

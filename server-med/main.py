@@ -1,10 +1,13 @@
 """Điểm vào FastAPI MedIntel — chạy: uvicorn main:app --reload --app-dir ."""
 
 import logging
+import uuid
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from app.api.v1.router import api_router
 from app.core.config import settings
@@ -21,36 +24,48 @@ logging.getLogger("medintel.http").setLevel(logging.INFO)
 async def lifespan(app: FastAPI):
     if settings.create_tables_on_startup:
         Base.metadata.create_all(bind=engine)
-        # Tạo user mặc định cho demo nếu chưa có
-        from sqlalchemy.orm import Session
-        from app.models.user import User
-        import uuid
+        from app.models.medical import DiseaseCategory
+        from app.models.profile import Profile
+
         with Session(engine) as session:
+            try:
+                if not session.scalars(select(DiseaseCategory).limit(1)).first():
+                    session.add(
+                        DiseaseCategory(
+                            category_name="Chưa phân loại",
+                            description="Mặc định hệ thống / OCR",
+                        )
+                    )
+                    session.commit()
+            except Exception as e:
+                print(f"Could not seed disease category: {e}")
+                session.rollback()
+
             try:
                 raw_uid = str(settings.default_prescription_user_id).strip()
                 if not raw_uid:
                     raise ValueError("default_prescription_user_id trống")
                 uid = uuid.UUID(raw_uid)
-                if not session.get(User, uid):
-                    from app.services.auth_service import hash_password
-
-                    demo_user = User(
-                        id=uid,
-                        email="demo@medintel.ai",
-                        hashed_password=hash_password("demo-password-change-me"),
-                        full_name="Demo User",
+                if not session.get(Profile, uid):
+                    session.add(
+                        Profile(
+                            id=uid,
+                            full_name="Demo User",
+                            role="patient",
+                            email="demo@medintel.local",
+                        )
                     )
-                    session.add(demo_user)
                     session.commit()
-                    print(f"Created demo user: {uid}")
+                    print(f"Created demo profile: {uid}")
             except Exception as e:
-                print(f"Could not create demo user: {e}")
+                print(f"Could not create demo profile: {e}")
+                session.rollback()
     yield
 
 
 app = FastAPI(
     title="MedIntel API",
-    description="Backend tuân thủ điều trị — FastAPI + PostgreSQL",
+    description="Backend tuân thủ điều trị — FastAPI + PostgreSQL/SQLite",
     version="0.1.0",
     lifespan=lifespan,
 )
@@ -62,7 +77,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# Thêm sau CORS: chạy ngoài cùng, log toàn bộ request/response
 app.add_middleware(HttpLoggingMiddleware)
 
 app.include_router(api_router, prefix="/api/v1")

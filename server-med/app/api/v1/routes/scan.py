@@ -5,7 +5,7 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from ai.ocr import extract_prescription
 from app.api.deps import DbSession
 from app.core.config import settings
-from app.repositories.user_repository import get_by_id
+from app.repositories.profile_repository import get_by_id
 from app.schemas.scan import ScanPersistedResponse, ScanResult
 from app.services.prescription_scan_service import normalize_llm_scan_dict, persist_scan_result
 
@@ -75,7 +75,7 @@ async def scan_prescription(
         raise HTTPException(status_code=422, detail=f"Dữ liệu AI không hợp lệ: {exc}") from exc
 
     try:
-        prescription_id, saved = persist_scan_result(db, user_id=uid, scan=scan)
+        prescription_id, saved = persist_scan_result(db, profile_id=uid, scan=scan)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Lưu DB thất bại: {exc}") from exc
 
