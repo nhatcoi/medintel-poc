@@ -1,85 +1,138 @@
 ---
 name: agentic-medical-adherence
 description: >-
-  Thiết kế chat AI tuân thủ điều trị theo workflow agentic: phân loại intent bệnh nhân,
-  tool calling, RAG/pgvector, orchestration (ReAct, graph, planner). Dùng khi thiết kế
-  prompt, API chat, tool schema, LangGraph/orchestrator, hoặc khi user nhắc agentic-medical.md,
-  medication adherence agent, drug interaction, side effects, lịch uống thuốc.
+  MedIntel: danh mục tính năng app + chat agentic tuân thủ điều trị (tool_calls, RAG/pgvector,
+  intent bệnh nhân). Dùng khi thiết kế prompt/API, orchestration, hoặc khi user nhắc
+  agentic-medical.md, medication adherence, drug interaction, OCR đơn, server-med chat.
 ---
 
-# Agentic medical adherence (MedIntel)
+# MedIntel — Tính năng ứng dụng & agentic tuân thủ điều trị
 
-## Nguồn mở rộng trong repo
+## Nguồn trong repo
 
-Chi tiết ví dụ flow, bảng CSDL gợi ý và bảng so sánh framework: **`agentic-medical.md`**. Skill này tóm tắt phần agent cần nhớ khi code/prompt; đọc file trên khi cần case study đầy đủ.
+| File / thư mục | Vai trò |
+|----------------|---------|
+| **`agentic-medical.md`** | Ý tưởng chi tiết: 6 nhóm intent, flow mẫu, micro-agent, tool gợi ý, pattern ReAct/graph, tính năng AI bổ sung |
+| **`doc.md`** | Stack & module MedIntel (Flutter features, FastAPI, DB, OCR/LLM/RAG đề xuất) |
+| **`db-design.md`** | Schema local-first / sync (nếu có) |
+| **`architecture.md`** | Kiến trúc 3 lớp, Postgres/pgvector |
+| **`server-med/ai/chatbot/__init__.py`** | System prompt + **tool_calls** thực tế đang cho phép |
+| **`server-med/app/api/v1/routes/`** | API: `chat`, `scan`, `auth`, `ocr`, `health` |
+| **`tools/crawl/`** | Đồng bộ danh mục thuốc quốc gia (DAV) → Postgres (`national_drugs`, …) — nguồn fact/RAG sau này |
 
-Bối cảnh báo cáo / COM-B / pháp lý VN: kết hợp **`/medintel-nckh`** + `doc.md`.
+Báo cáo NCKH / COM-B / Thông tư 26: dùng thêm **`/medintel-nckh`**.
 
-## Ý tưởng cốt lõi
+---
 
-**Conversation-driven agentic:** mỗi tin nhắn bệnh nhân kích hoạt chuỗi *suy luận → (tuỳ chọn) gọi công cụ → quan sát kết quả → trả lời / hỏi làm rõ*. Không chỉ trả lời tĩnh: agent **lấy dữ liệu thật** (danh sách thuốc, lịch, log, knowledge base) rồi mới phản hồi.
+## 1. Tính năng ứng dụng MedIntel (đặc tả theo `doc.md`)
 
-Tách **Chat/orchestrator** khỏi **công cụ** (micro-agents hoặc function tools): schedule, drug info, side effects, interactions, adherence.
+Gom theo **mobile (Flutter)** và **hạ tầng**; một số màn hình có thể đang prototype.
 
-## Sáu nhóm intent thường gặp
+### 1.1 Mobile — module & trải nghiệm
 
-| Nhóm | Ví dụ ý định người dùng | Công việc agent |
-|------|-------------------------|-----------------|
-| Ghi nhận uống thuốc | “Tôi vừa uống thuốc”, “uống Paracetamol”, “quên uống” | Xác định thuốc → log (taken/missed/skipped) → có thể hiển thị info/cảnh báo |
-| Lịch / hôm nay uống gì | “Hôm nay uống gì?”, “còn thuốc nào?” | Lấy schedule → đối chiếu log → trạng thái còn thiếu |
-| Quên / uống muộn | “Quên sáng nay”, “uống bù được không?” | Guideline + khoảng cách liều → gợi ý an toàn (không thay bác sĩ) |
-| Tác dụng phụ / triệu chứng | “Buồn nôn sau khi uống”, “thuốc này có tác dụng phụ gì?” | Tra cứu adverse effects + phân tầng mức độ → khuyến cáo cấp cứu / tái khám |
-| Tương tác thuốc | “Hai thuốc này uống chung được không?”, “có kỵ rượu không?” | Interaction check + mức độ nghiêm trọng |
-| Kiến thức thuốc | “Thuốc này để làm gì?”, “trước hay sau ăn?” | RAG / drug knowledge retrieval |
+| Nhóm | Tính năng (mô tả ngắn) |
+|------|-------------------------|
+| **Onboarding** | Làm quen app, (tuỳ thiết kế) thiết lập hồ sơ ban đầu |
+| **Auth** | Đăng nhập; token JWT giao tiếp API (`server-med` có route auth) |
+| **Home / Dashboard** | Tổng quan ngày, lối tắt tới thuốc, chat, tuân thủ |
+| **prescription_scan** | Chụp/quét ảnh đơn thuốc → OCR (+ LLM structured) → chuẩn hoá đơn |
+| **medication** | Danh sách thuốc, chi tiết, liều / gợi ý lịch (theo đặc tả) |
+| **reminder** | Nhắc uống thuốc (local notification; FCM đề xuất trong doc) |
+| **adherence** | Theo dõi đã uống / quên / bỏ liều; dashboard tuân thủ |
+| **ai_chat** | Chat hỗ trợ tuân thủ; nhận `tool_calls` + `suggested_actions` từ server để app thực thi cục bộ |
 
-## Tool layer (hợp đồng logic)
+### 1.2 Backend & dữ liệu
 
-Đặt tên và tham số thống nhất với backend/DB khi có; prototype có thể map sang client.
+| Thành phần | Tính năng |
+|------------|-----------|
+| **FastAPI** | REST: người dùng/hồ sơ, xử lý đơn, lịch, tích hợp AI (theo doc) |
+| **PostgreSQL** | Người dùng, đơn, thuốc, lịch, log tuân thủ, lịch sử chat (mô hình trong doc; bảng cụ thể theo migration thực tế) |
+| **JWT** | Xác thực API |
+| **OCR + LLM** | Pipeline quét đơn (route scan: ảnh → trích xuất có cấu trúc) |
+| **RAG / pgvector** | Đề xuất trong doc; module `server-med/ai/rag/` hiện placeholder — chưa truy vấn vector trong code mẫu |
+| **Lưu trữ ảnh** | R2 / S3 (doc) |
 
-- `get_patient_medications` — danh mục thuốc đang dùng  
-- `log_medication` / `log_dose` — ghi nhận liều (status + thời điểm)  
-- `get_today_schedule` / `check_taken_status` — lịch vs log  
-- `get_drug_info` — mô tả, cách dùng (từ DB + embedding)  
-- `check_side_effects` — triệu chứng ↔ thuốc  
-- `check_drug_interaction` — cặp thuốc / thuốc–thức ăn  
-- `search_drug_knowledge` — RAG tổng quát  
+### 1.3 Dữ liệu thuốc quốc gia (hỗ trợ RAG / tool sau này)
 
-**Luồng mẫu “tôi uống thuốc”:** intent log → lấy danh sách → **hỏi disambiguation** (A/B/C hoặc tên) → sau khi chọn → log → (tuỳ chọn) `get_drug_info` để giải thích ngắn.
+| Nguồn | Mục đích |
+|-------|----------|
+| **DAV crawl → Postgres** (`tools/crawl/dav_postgres_import.py`) | ~50k+ bản ghi: nhận dạng thuốc, số ĐK, hoạt chất, dạng bào chế, … — **fact layer** cho tra cứu / embedding, không thay thế tờ hướng dẫn đầy đủ |
 
-## Kiến trúc dữ liệu (mục tiêu production)
+---
 
-Postgres: bệnh nhân, thuốc (có thể có **embedding** + pgvector), đơn/lịch, **medication_logs**, bảng **interactions**. Chat gateway → **orchestrator** → LLM + tool layer → DB/RAG.
+## 2. Tính năng “agentic” — gọi AI & công cụ
 
-**MedIntel hiện tại (cần khớp khi thiết kế):** một phần thực thi **tool trên client** (lưu local: thuốc, log, ghi chú, reminder draft); server có thể bổ sung RAG/OCR sau. Khi viết prompt, phân biệt rõ tool **server** vs **client** để tránh giả định sai nguồn dữ liệu.
+### 2.1 Luồng chat hiện có (`POST` chat /message)
 
-## Các pattern orchestration (chọn theo độ phức tạp)
+1. Client gửi nội dung người dùng (+ tuỳ chọn `profile_id` để **lưu phiên** vào DB).
+2. Server gọi LLM OpenAPI-compatible với **system prompt** định nghĩa MedIntel Agent.
+3. LLM trả **một JSON**: `reply`, `tool_calls`, `suggested_actions`.
+4. **`tool_calls`**: server **chỉ chuẩn hoá và trả về** cho client — **thực thi lưu dữ liệu do app cục bộ** (local-first trong prompt).
+5. **`suggested_actions`**: chip gợi ý câu tiếp theo (UI).
 
-| Pattern | Ý chính | Khi dùng |
-|---------|---------|----------|
-| **ReAct** | Think → Act (tool) → Observe → lặp | Chat linh hoạt, nhiều vòng |
-| **Plan → Execute** | Planner ra steps cố định rồi executor chạy | Workflow dài, cần ổn định |
-| **Graph / state machine** | Node = bước, cạnh = điều kiện | Production, intent rẽ nhánh rõ |
-| **Multi-agent** | Coordinator + agent chuyên môn | Tách safety / medication / triage |
-| **Tool-calling đơn** | Một vòng LLM → tool → trả lời | RAG đơn giản |
+### 2.2 Tool calls được phép (whitelist trong code)
 
-Thực tế hay **kết hợp:** graph hoặc state machine + vòng ReAct ngắn + tool calling; RAG trên Postgres/pgvector.
+Định nghĩa trong `server-med/ai/chatbot/__init__.py` — `ALLOWED_TOOLS`:
 
-## Quy tắc prompt & an toàn (bắt buộc nhắc trong system prompt)
+| Tool | Mục đích agentic | Tham số chính (tóm tắt) |
+|------|------------------|-------------------------|
+| **`log_dose`** | Ghi nhận một liều (tuân thủ) | `medication_name`, `status`: taken / missed / skipped, `note?`, `recorded_at?` |
+| **`upsert_medication`** | Thêm/cập nhật thuốc trong danh sách cục bộ | `name`, `dosage_label?`, `schedule_hint?` |
+| **`append_care_note`** | Nhật ký / ghi chú nhanh | `text` |
+| **`save_reminder_intent`** | Nháp ý định nhắc (báo thức thật do app xử lý) | `title`, `detail?` |
 
-- **Luôn:** xác nhận thuốc trước khi log; làm rõ khi mơ hồ; cảnh báo khi triệu chứng nặng / khẩn cấp.  
-- **Không:** chẩn đoán bệnh; thay lời bác sĩ; kê đơn / đổi liều.  
-- Trả lời ngắn gọn khi phù hợp UI mobile; **structured output** (JSON: `reply`, `tool_calls`, v.v.) khi client cần thực thi cục bộ.
+**Chưa có trong whitelist:** `get_patient_medications`, `get_today_schedule`, `check_drug_interaction`, `search_drug_knowledge`, v.v. — các tool đó nằm trong **`agentic-medical.md`** như **mục tiêu kiến trúc**; khi triển khai cần mở rộng `ALLOWED_TOOLS` + thực thi server hoặc client.
 
-## Khi user yêu cầu “thiết kế agent”
+### 2.3 OCR đơn thuốc (AI pipeline, không phải chat tool)
 
-1. Xác định intent(s) từ câu hỏi.  
-2. Liệt kê tool cần gọi và thứ tự (có bước hỏi lại không).  
-3. Chỉ rõ nguồn dữ liệu: local vs API vs RAG.  
-4. Thêm lớp an toàn: từ khóa đỏ (đau ngực, khó thở, dị ứng nặng…) → hướng dẫn cấp cứu / BS.  
-5. Nếu production: cân nhắc FHIR, RxNorm, MedDRA — ghi `(cần bổ sung)` nếu chưa có trong dự án.
+- Route **scan prescription**: ảnh → LLM/OCR → chuẩn hoá → có thể **persist** qua service (xem `scan.py`, `prescription_scan_service`).
+- Bổ trợ **nhập liệu** và giảm sai sót — trục agentic “tuân thủ” thường kết hợp: quét đơn → danh sách thuốc trên máy → chat `log_dose` / lịch.
 
-## Tính năng bổ sung đáng thiết kế
+### 2.4 RAG (roadmap)
 
-- Phát hiện liều trễ (cron/push) + gợi ý ghi nhận bù.  
-- Hỏi chủ động adherence / symptom nhẹ.  
-- Điểm tuần (từ log) — khớp dashboard app.
+- `agentic-medical.md` + `doc.md`: RAG trên drug DB + **pgvector**.
+- Code: `ai/rag/` — cần implement `answer_with_context` và nối vào chat nếu muốn trả lời có trích dẫn từ `national_drugs` / tài liệu chunk.
+
+---
+
+## 3. Bản đồ `agentic-medical.md` → hệ thống
+
+### 3.1 Sáu nhóm intent bệnh nhân (tài liệu thiết kế)
+
+| # | Intent | Agent / tool (trong tài liệu) | Ghi chú đối chiếu MedIntel code |
+|---|--------|-------------------------------|----------------------------------|
+| 1 | Uống / ghi nhận thuốc | `get_patient_medications` → hỏi chọn → `log_medication` | Có **`log_dose`**; chưa có tool “lấy danh sách” từ server trong whitelist |
+| 2 | Lịch hôm nay | `get_today_schedule`, `check_taken_status` | Roadmap — cần API + tool |
+| 3 | Quên / uống muộn | guideline + khoảng cách liều | Prompt an toàn + (sau) tool lịch/log |
+| 4 | Tác dụng phụ | `check_side_effects` | Roadmap — thường cần RAG + nguồn chuyên môn |
+| 5 | Tương tác thuốc | `check_drug_interaction` | Roadmap — DB interaction hoặc API ngoài |
+| 6 | Kiến thức thuốc | `get_drug_info`, `search_drug_knowledge` | Roadmap — RAG + catalog DAV |
+
+### 3.2 Micro-agent (khái niệm trong `agentic-medical.md`)
+
+Chat Agent điều phối (trong tài liệu): **Medication**, **Schedule**, **Drug Knowledge**, **Side Effect**, **Drug Interaction**, **Adherence**.  
+Thực tế triển khai có thể: **một LLM + nhiều tool** hoặc **LangGraph / multi-agent** — skill **`/medintel-architecture`** bổ sung chi tiết stack.
+
+### 3.3 Tính năng AI bổ sung (mục tiêu sản phẩm — `agentic-medical.md`)
+
+- Missed medication detection (cron/push).
+- Symptom monitoring / triage (nhẹ–nặng).
+- Adherence score tuần.
+- Proactive agent (hỏi “đã uống chưa?”).
+
+---
+
+## 4. Quy tắc cho agent (Claude) khi viết / thiết kế
+
+1. **Phân tách:** tool **đã có trong `ALLOWED_TOOLS`** vs tool chỉ trong **tài liệu** — không mô tả nhầm đã production.  
+2. **An toàn:** không chẩn đoán, không thay bác sĩ, không đổi liều; triệu chứng nặng → hướng dẫn cấp cứu / BS.  
+3. **Nguồn sự thật:** catalog DAV = nhận dạng & meta; mô tả lâm sàng sâu cần nguồn riêng + RAG, tránh bịa.  
+4. **Output có cấu trúc:** giữ khớp schema JSON (`reply`, `tool_calls`, `suggested_actions`) khi sửa `chatbot`.  
+5. **Mở rộng tool:** mỗi tool mới → cập nhật `ALLOWED_TOOLS`, system prompt, và (nếu server-side) repository + route.
+
+## Lệnh skill liên quan
+
+- **`/medintel-nckh`** — báo cáo, COM-B, PDF đề tài  
+- **`/medintel-architecture`** — sơ đồ 3 lớp, Postgres/pgvector  
+- **`/medintel-db-local-sync`** — schema local/sync  
+- **`/nckh-bao-cao`**, **`/tai-lieu-tham-khao`** — viết báo cáo & tham khảo  

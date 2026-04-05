@@ -30,6 +30,10 @@ class ChatRequest(BaseModel):
         default=None,
         description="UUID phiên chat có sẵn; bỏ trống sẽ tạo chat_sessions mới",
     )
+    include_medication_context: bool = Field(
+        default=False,
+        description="Nếu true và có profile_id hợp lệ: ghép danh sách thuốc đã lưu trên server vào system prompt",
+    )
 
 
 class ChatResponse(BaseModel):

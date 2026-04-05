@@ -37,8 +37,8 @@ if [ ! -d "venv" ]; then
     python3 -m venv venv
     source venv/bin/activate
     print_info "Installing dependencies..."
-    pip install --upgrade pip --quiet
-    pip install -r requirements.txt --quiet
+    "${SCRIPT_DIR}/venv/bin/python" -m pip install --upgrade pip --quiet
+    "${SCRIPT_DIR}/venv/bin/python" -m pip install -r requirements.txt --quiet
     print_info "Virtual environment created successfully!"
 else
     source venv/bin/activate
@@ -51,10 +51,22 @@ if [ ! -f "requirements.txt" ]; then
 fi
 
 # Install/upgrade dependencies if needed
-if ! python -c "import requests" 2>/dev/null; then
+VENV_PY="${SCRIPT_DIR}/venv/bin/python"
+if [ -x "$VENV_PY" ]; then
+    RUN_PY="$VENV_PY"
+else
+    RUN_PY="python3"
+fi
+
+if ! "$RUN_PY" -c "import requests" 2>/dev/null; then
     print_info "Installing missing dependencies..."
-    pip install --upgrade pip --quiet
-    pip install -r requirements.txt --quiet
+    if [ -x "$VENV_PY" ]; then
+        "$VENV_PY" -m pip install --upgrade pip --quiet
+        "$VENV_PY" -m pip install -r requirements.txt --quiet
+    else
+        python3 -m pip install --upgrade pip --quiet
+        python3 -m pip install -r requirements.txt --quiet
+    fi
 fi
 
 # Check if crawl_dav_api.py exists
@@ -91,5 +103,5 @@ fi
 
 # Run crawler with all arguments
 print_info "Running crawler..."
-python crawl_dav_api.py "${ARGS[@]}"
+"$RUN_PY" crawl_dav_api.py "${ARGS[@]}"
 

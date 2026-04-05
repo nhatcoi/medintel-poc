@@ -138,7 +138,8 @@ class DavApiCrawler:
                 print("Đã crawl hết tất cả dữ liệu")
                 break
             
-            skip_count += items_per_page
+            # Offset API = số bản ghi đã lấy (không dùng items_per_page — tránh lệch nếu trang trả ít hơn max)
+            skip_count += len(items)
             page += 1
             
             # Delay để tránh rate limit
@@ -536,7 +537,7 @@ class DavApiCrawler:
                 print("Đã crawl hết tất cả dữ liệu")
                 break
             
-            skip_count += items_per_page
+            skip_count += len(items)
             page += 1
             
             # Delay để tránh rate limit
@@ -593,7 +594,12 @@ def main():
                        help='JWT token để authenticate (nếu cần)')
     parser.add_argument('--full-import', action='store_true', default=True,
                        help='Sử dụng API import-full để insert đầy đủ các bảng liên quan (mặc định: True)')
-    
+    parser.add_argument(
+        '--import-postgres',
+        action='store_true',
+        help='Sau khi crawl (không dùng --upload), ghi vào PostgreSQL theo ORM server-med (cần DATABASE_URL)',
+    )
+
     args = parser.parse_args()
     
     crawler = DavApiCrawler(
@@ -607,7 +613,14 @@ def main():
         if args.upload:
             crawler.crawl_and_upload(max_pages=1, items_per_page=10, delay=0.5, use_full_import=args.full_import)
         else:
-            crawler.crawl_and_save(max_pages=1, items_per_page=10, delay=0.5, filename=args.filename)
+            items = crawler.crawl_all(max_pages=1, items_per_page=10, delay=0.5)
+            if items and args.import_postgres:
+                from dav_postgres_import import import_items
+
+                ins, upd, sk = import_items(items)
+                print(f"PostgreSQL: insert={ins}, update={upd}, skip={sk}")
+            elif items:
+                crawler.save_to_json(items, args.filename)
     else:
         if args.upload:
             crawler.crawl_and_upload(
@@ -617,12 +630,18 @@ def main():
                 use_full_import=args.full_import
             )
         else:
-            crawler.crawl_and_save(
+            items = crawler.crawl_all(
                 max_pages=args.max_pages,
                 items_per_page=args.items_per_page,
                 delay=args.delay,
-                filename=args.filename
             )
+            if items and args.import_postgres:
+                from dav_postgres_import import import_items
+
+                ins, upd, sk = import_items(items)
+                print(f"PostgreSQL: insert={ins}, update={upd}, skip={sk}")
+            elif items:
+                crawler.save_to_json(items, args.filename)
 
 
 if __name__ == "__main__":
