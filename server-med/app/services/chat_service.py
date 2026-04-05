@@ -69,19 +69,53 @@ def _persist_agentic_turn(
     return chat_session.id
 
 
+def _resolve_medication_context(db: Session, body: ChatRequest) -> str | None:
+    if not (body.include_medication_context and body.profile_id and body.profile_id.strip()):
+        return None
+    try:
+        pid = uuid.UUID(body.profile_id.strip())
+    except ValueError:
+        return None
+    if get_by_id(db, pid) is None:
+        return None
+    return build_medication_context_block(db, pid)
+
+
+async def preview_chat_message(db: Session, body: ChatRequest) -> ChatResponse:
+    """LLM + tool_calls, không lưu DB."""
+    text = body.text.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Text must not be empty")
+
+    extra_context = _resolve_medication_context(db, body)
+
+    try:
+        turn = await llm_reply(text, extra_context=extra_context)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"LLM error: {exc}") from exc
+
+    actions = [
+        SuggestedAction(
+            label=a["label"],
+            prompt=a["prompt"] if a.get("prompt") else a["label"],
+        )
+        for a in turn.suggested_actions
+    ]
+    tools = [ToolCall(tool=t["tool"], args=t.get("args") or {}) for t in turn.tool_calls]
+    return ChatResponse(
+        reply=turn.reply,
+        session_id=None,
+        suggested_actions=actions,
+        tool_calls=tools,
+    )
+
+
 async def process_chat_message(db: Session, body: ChatRequest) -> ChatResponse:
     text = body.text.strip()
     if not text:
         raise HTTPException(status_code=400, detail="Text must not be empty")
 
-    extra_context: str | None = None
-    if body.include_medication_context and body.profile_id and body.profile_id.strip():
-        try:
-            pid = uuid.UUID(body.profile_id.strip())
-            if get_by_id(db, pid):
-                extra_context = build_medication_context_block(db, pid)
-        except ValueError:
-            pass
+    extra_context = _resolve_medication_context(db, body)
 
     try:
         turn = await llm_reply(text, extra_context=extra_context)

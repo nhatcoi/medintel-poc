@@ -5,7 +5,9 @@ from __future__ import annotations
 import uuid
 from datetime import date
 
-from sqlalchemy import Boolean, Date, ForeignKey, Integer, String, Text
+from typing import Any
+
+from sqlalchemy import Boolean, Date, ForeignKey, Integer, JSON, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database.session import Base, GUID
@@ -78,6 +80,17 @@ class NationalDrug(Base, TimestampMixin):
     is_permitted: Mapped[bool | None] = mapped_column(Boolean, default=True)
     is_registration_withdrawn: Mapped[bool | None] = mapped_column(Boolean, default=False)
     external_id: Mapped[int | None] = mapped_column(Integer, unique=True, nullable=True)
+    # Đồng bộ thêm từ DAV list API (GetAllPublicServerPaging) — phục vụ RAG / agent
+    dav_notes: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+        comment="ghiChu từ DAV (thường ghi chú hành chính, không phải SmPC đầy đủ)",
+    )
+    dav_documents: Mapped[dict[str, Any] | None] = mapped_column(
+        JSON,
+        nullable=True,
+        comment="URL/metadata tài liệu: HDSD, nhãn, TCCL (trích từ thongTinTaiLieu)",
+    )
 
     basic_info: Mapped[DrugBasicInfo | None] = relationship(
         "DrugBasicInfo", back_populates="drug", uselist=False, cascade="all, delete-orphan"
@@ -93,6 +106,9 @@ class DrugBasicInfo(Base):
     concentration: Mapped[str | None] = mapped_column(String(255), nullable=True)
     form_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("dosage_forms.form_id"), nullable=True)
     route_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    administration_route_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    drug_type_label: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    drug_group_label: Mapped[str | None] = mapped_column(String(255), nullable=True)
     packaging: Mapped[str | None] = mapped_column(Text, nullable=True)
     standard_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("quality_standards.standard_id"), nullable=True)
     shelf_life: Mapped[str | None] = mapped_column(String(50), nullable=True)

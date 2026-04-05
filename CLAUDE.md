@@ -37,6 +37,7 @@
 - `/nckh-bao-cao` — khung viết mục báo cáo NCKH
 - `/tai-lieu-tham-khao` — định dạng tham khảo
 - `/agentic-medical-adherence` — thiết kế chat agentic tuân thủ điều trị + `agentic-medical.md`
+- `/medintel-server-api` — FastAPI `server-med`: agent layer, chat, treatment/medications
 - `/medintel-db-local-sync` — schema `db-design.md`, profiles/sync, không IAM cổ điển
 - `/medintel-architecture` — kiến trúc 3 lớp, tools, Postgres/pgvector, `architecture.md`
 - Subagent `nckh-reviewer` — rà soát `doc.md` và tính nhất quán (chỉ đọc/tìm)

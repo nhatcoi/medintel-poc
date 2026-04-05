@@ -1,111 +1,18 @@
-import uuid
+from fastapi import APIRouter
 
-from fastapi import APIRouter, HTTPException
-
-from ai.chatbot import reply as llm_reply
 from app.api.deps import DbSession
-from app.core.config import settings
-from app.models.chat import ChatMessage, ChatSession
-from app.repositories.profile_repository import get_by_id
-from app.schemas.chat import ChatRequest, ChatResponse, SuggestedAction, ToolCall
+from app.schemas.chat import ChatRequest, ChatResponse
+from app.services.chat_service import preview_chat_message, process_chat_message
 
 router = APIRouter()
 
 
-def _persist_agentic_turn(
-    db,
-    *,
-    profile_id: uuid.UUID,
-    session_id: str | None,
-    user_text: str,
-    reply_text: str,
-    actions: list[SuggestedAction],
-    tools: list[ToolCall],
-) -> uuid.UUID | None:
-    profile = get_by_id(db, profile_id)
-    if profile is None:
-        return None
-
-    chat_session: ChatSession | None = None
-    if session_id and session_id.strip():
-        try:
-            s_uuid = uuid.UUID(session_id.strip())
-            cand = db.get(ChatSession, s_uuid)
-            if cand is not None and cand.profile_id == profile_id:
-                chat_session = cand
-        except ValueError:
-            pass
-
-    if chat_session is None:
-        chat_session = ChatSession(profile_id=profile_id, title=None)
-        db.add(chat_session)
-        db.flush()
-
-    db.add(
-        ChatMessage(
-            session_id=chat_session.id,
-            profile_id=profile_id,
-            role="user",
-            content=user_text,
-        )
-    )
-    tools_json = [{"tool": t.tool, "args": dict(t.args)} for t in tools]
-    actions_json = [{"label": a.label, "prompt": a.prompt} for a in actions]
-    db.add(
-        ChatMessage(
-            session_id=chat_session.id,
-            profile_id=profile_id,
-            role="assistant",
-            content=reply_text,
-            tool_calls=tools_json or None,
-            suggested_actions=actions_json or None,
-            model_name=settings.llm_model,
-        )
-    )
-    db.commit()
-    return chat_session.id
-
-
 @router.post("/message", response_model=ChatResponse)
 async def send_message(body: ChatRequest, db: DbSession):
-    text = body.text.strip()
-    if not text:
-        raise HTTPException(status_code=400, detail="Text must not be empty")
-    try:
-        turn = await llm_reply(text)
-    except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"LLM error: {exc}")
-    actions = [
-        SuggestedAction(
-            label=a["label"],
-            prompt=a["prompt"] if a.get("prompt") else a["label"],
-        )
-        for a in turn.suggested_actions
-    ]
-    tools = [ToolCall(tool=t["tool"], args=t.get("args") or {}) for t in turn.tool_calls]
+    return await process_chat_message(db, body)
 
-    saved_session: uuid.UUID | None = None
-    if body.profile_id and body.profile_id.strip():
-        try:
-            pid = uuid.UUID(body.profile_id.strip())
-            saved_session = _persist_agentic_turn(
-                db,
-                profile_id=pid,
-                session_id=body.session_id,
-                user_text=text,
-                reply_text=turn.reply,
-                actions=actions,
-                tools=tools,
-            )
-        except ValueError:
-            pass
-        except Exception:
-            db.rollback()
-            raise
 
-    return ChatResponse(
-        reply=turn.reply,
-        session_id=str(saved_session) if saved_session else None,
-        suggested_actions=actions,
-        tool_calls=tools,
-    )
+@router.post("/message/dry-run", response_model=ChatResponse)
+async def send_message_dry_run(body: ChatRequest, db: DbSession):
+    """Giống /message nhưng không ghi chat_sessions / chat_messages (thử prompt + LLM)."""
+    return await preview_chat_message(db, body)

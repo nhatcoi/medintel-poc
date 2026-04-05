@@ -85,6 +85,55 @@ def _parse_date(s: Any) -> date | None:
         return None
 
 
+def _parse_json_list_str(raw: Any) -> list[dict[str, Any]]:
+    """DAV hay nhét mảng object trong chuỗi JSON (urlHuongDanSuDung, urlNhan, …)."""
+    if raw is None:
+        return []
+    if isinstance(raw, list):
+        return [x for x in raw if isinstance(x, dict)]
+    if isinstance(raw, str) and raw.strip():
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError:
+            return []
+        if isinstance(data, list):
+            return [x for x in data if isinstance(x, dict)]
+    return []
+
+
+def _doc_entries(docs: list[dict[str, Any]], *, max_n: int = 25) -> list[dict[str, Any | None]]:
+    out: list[dict[str, Any | None]] = []
+    for d in docs[:max_n]:
+        path = d.get("duongDanTep")
+        desc = d.get("moTaTep")
+        if path or desc:
+            out.append(
+                {
+                    "path": str(path).strip()[:2000] if path else None,
+                    "description": str(desc).strip()[:500] if desc else None,
+                }
+            )
+    return out
+
+
+def _extract_dav_documents(item: dict[str, Any]) -> dict[str, Any] | None:
+    """Trích link tài liệu từ thongTinTaiLieu — cơ sở tải PDF / RAG sau này."""
+    tl = item.get("thongTinTaiLieu")
+    if not isinstance(tl, dict):
+        return None
+    result: dict[str, Any] = {}
+    hdsd = _doc_entries(_parse_json_list_str(tl.get("urlHuongDanSuDung")))
+    if hdsd:
+        result["hdsd"] = hdsd
+    label = _doc_entries(_parse_json_list_str(tl.get("urlNhan")))
+    if label:
+        result["label"] = label
+    tccl = _doc_entries(_parse_json_list_str(tl.get("jsonTaiLieuTCCL")))
+    if tccl:
+        result["tccl"] = tccl
+    return result if result else None
+
+
 # Namespace cố định: cùng external_id DAV → cùng UUID trong DB (idempotent)
 _DRUG_NS = uuid.uuid5(uuid.NAMESPACE_OID, "vn.gov.dav.medintel.national_drug")
 
@@ -189,6 +238,10 @@ def upsert_dav_item(session, item: dict[str, Any]) -> str:
     rut = item.get("thongTinRutSoDangKy") or {}
     drug.is_registration_withdrawn = bool(rut.get("urlCongVanRutSoDangKy"))
 
+    ghi = item.get("ghiChu")
+    drug.dav_notes = str(ghi).strip()[:10000] if ghi is not None and str(ghi).strip() else None
+    drug.dav_documents = _extract_dav_documents(item)
+
     session.flush()
 
     # basic info: 1-1 — xóa cũ theo drug_id rồi thêm (đơn giản, đúng với crawl lại)
@@ -204,13 +257,20 @@ def upsert_dav_item(session, item: dict[str, Any]) -> str:
     conc_parts = [p for p in (ham_luong, ham_luong2) if p]
     concentration = " / ".join(str(p).strip() for p in conc_parts if str(p).strip())[:255] or None
 
-    route_raw = basic.get("maDuongDung") or basic.get("tenDuongDung")
     route_id: int | None = None
-    if route_raw is not None:
+    ma_dd = basic.get("maDuongDung")
+    if ma_dd is not None:
         try:
-            route_id = int(route_raw)
+            route_id = int(ma_dd)
         except (TypeError, ValueError):
             route_id = None
+    ten_dd = basic.get("tenDuongDung")
+    admin_route = str(ten_dd).strip()[:255] if ten_dd is not None and str(ten_dd).strip() else None
+
+    loai = basic.get("loaiThuoc")
+    type_lbl = str(loai).strip()[:200] if loai is not None and str(loai).strip() else None
+    nhom = basic.get("nhomThuoc")
+    group_lbl = str(nhom).strip()[:255] if nhom is not None and str(nhom).strip() else None
 
     info = DrugBasicInfo(
         id=_info_pk(ext_id),
@@ -219,6 +279,9 @@ def upsert_dav_item(session, item: dict[str, Any]) -> str:
         concentration=concentration,
         form_id=form_id,
         route_id=route_id,
+        administration_route_name=admin_route,
+        drug_type_label=type_lbl,
+        drug_group_label=group_lbl,
         packaging=str(basic.get("dongGoi")).strip()[:10000] if basic.get("dongGoi") else None,
         standard_id=std_id,
         shelf_life=str(basic.get("tuoiTho")).strip()[:50] if basic.get("tuoiTho") else None,
