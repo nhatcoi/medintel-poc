@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/vitalis_colors.dart';
-import '../data/ai_chat_demo_data.dart';
+import '../../../providers/providers.dart';
 
-class AiChatWelcomeBlock extends StatelessWidget {
+class AiChatWelcomeBlock extends ConsumerWidget {
   const AiChatWelcomeBlock({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final text = Theme.of(context).textTheme;
+    final auth = ref.watch(authProvider);
+    final name = auth.user?.fullName?.trim().isNotEmpty == true
+        ? auth.user!.fullName!.trim()
+        : 'Bạn';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
@@ -39,7 +44,7 @@ class AiChatWelcomeBlock extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           Text(
-            'How are you feeling, $kAiChatUserName?',
+            'Xin chào, $name',
             textAlign: TextAlign.center,
             style: text.headlineSmall?.copyWith(
               fontWeight: FontWeight.w800,
@@ -49,7 +54,8 @@ class AiChatWelcomeBlock extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            "I'm here to help with your medications and health questions.",
+            'Trợ lý agent: có thể ghi nhận uống thuốc, thêm thuốc, ghi chú — '
+            'lưu ngay trên máy bạn (đồng bộ đám mây sẽ làm sau nếu bạn bật).',
             textAlign: TextAlign.center,
             style: text.bodyLarge?.copyWith(
               color: VitalisColors.onSurfaceVariant,

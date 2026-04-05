@@ -145,7 +145,9 @@ class _AdherenceCard extends StatelessWidget {
             ),
           ),
           Text(
-            '$dosesTaken OF $dosesTotal DOSES TAKEN',
+            dosesTotal <= 0
+                ? 'CHƯA CÓ LỊCH LIỀU'
+                : '$dosesTaken / $dosesTotal LIỀU ĐÃ GHI',
             textAlign: TextAlign.center,
             style: text.labelMedium?.copyWith(
               color: VitalisColors.statusSuccess,

@@ -1,11 +1,30 @@
-from passlib.context import CryptContext
+from datetime import UTC, datetime, timedelta
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+import bcrypt
+from jose import jwt
+
+from app.core.config import settings
 
 
 def hash_password(plain: str) -> str:
-    return pwd_context.hash(plain)
+    # bcrypt giới hạn 72 byte; mật khẩu dài hơn cần cắt hoặc pre-hash (device token = uuid hex, ngắn)
+    raw = plain.encode("utf-8")
+    if len(raw) > 72:
+        raw = raw[:72]
+    return bcrypt.hashpw(raw, bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    raw = plain.encode("utf-8")
+    if len(raw) > 72:
+        raw = raw[:72]
+    try:
+        return bcrypt.checkpw(raw, hashed.encode("utf-8"))
+    except ValueError:
+        return False
+
+
+def create_access_token(user_id: str) -> str:
+    expire = datetime.now(UTC) + timedelta(hours=settings.jwt_exp_hours)
+    payload = {"sub": user_id, "exp": expire}
+    return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)

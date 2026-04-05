@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 
-import '../data/caregiver_demo_data.dart';
+import '../data/caregiver_ui_model.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/vitalis_colors.dart';
 
 class RecentAlertsSection extends StatelessWidget {
-  const RecentAlertsSection({super.key, required this.alerts});
+  const RecentAlertsSection({
+    super.key,
+    required this.alerts,
+    this.onActionTap,
+  });
 
   final List<CareAlertItem> alerts;
+  final void Function(CareAlertItem alert)? onActionTap;
 
   @override
   Widget build(BuildContext context) {
@@ -26,25 +31,34 @@ class RecentAlertsSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: VitalisColors.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-            ),
-            child: Column(
-              children: [
-                for (var i = 0; i < alerts.length; i++) ...[
-                  if (i > 0)
-                    Divider(
-                      height: 1,
-                      thickness: 1,
-                      color: VitalisColors.outlineVariantBase.withValues(alpha: 0.12),
-                    ),
-                  _AlertTile(alert: alerts[i]),
+          if (alerts.isEmpty)
+            Text(
+              'Không có cảnh báo gần đây (theo dữ liệu cục bộ).',
+              style: text.bodyMedium?.copyWith(
+                color: VitalisColors.onSurfaceVariant,
+                height: 1.4,
+              ),
+            )
+          else
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: VitalisColors.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+              ),
+              child: Column(
+                children: [
+                  for (var i = 0; i < alerts.length; i++) ...[
+                    if (i > 0)
+                      Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: VitalisColors.outlineVariantBase.withValues(alpha: 0.12),
+                      ),
+                    _AlertTile(alert: alerts[i], onActionTap: onActionTap),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -52,9 +66,10 @@ class RecentAlertsSection extends StatelessWidget {
 }
 
 class _AlertTile extends StatelessWidget {
-  const _AlertTile({required this.alert});
+  const _AlertTile({required this.alert, this.onActionTap});
 
   final CareAlertItem alert;
+  final void Function(CareAlertItem alert)? onActionTap;
 
   @override
   Widget build(BuildContext context) {
@@ -89,7 +104,7 @@ class _AlertTile extends StatelessWidget {
                 if (alert.actionLabel != null) ...[
                   const SizedBox(height: 10),
                   TextButton(
-                    onPressed: () {},
+                    onPressed: () => onActionTap?.call(alert),
                     style: TextButton.styleFrom(
                       padding: EdgeInsets.zero,
                       minimumSize: const Size(48, 40),

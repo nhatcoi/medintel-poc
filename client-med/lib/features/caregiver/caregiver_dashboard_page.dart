@@ -1,20 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import 'data/caregiver_demo_data.dart';
+import '../../core/theme/vitalis_colors.dart';
+import '../../data/dashboard_from_local.dart';
+import '../../providers/local_medintel_provider.dart';
+import '../../providers/providers.dart';
 import 'widgets/caregiver_top_bar.dart';
 import 'widgets/medications_section.dart';
 import 'widgets/monitoring_cards_block.dart';
 import 'widgets/patient_monitoring_header.dart';
 import 'widgets/recent_alerts_section.dart';
-import '../../core/theme/vitalis_colors.dart';
 
-/// **Caregiver View** — nội dung scroll; shell bọc SafeArea + bottom nav.
-class CaregiverDashboardPage extends StatelessWidget {
+/// **Care** — theo dõi từ dữ liệu cục bộ (cùng nguồn với Home); không dùng mẫu John Doe.
+class CaregiverDashboardPage extends ConsumerWidget {
   const CaregiverDashboardPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final model = caregiverDemoModel();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final local = ref.watch(localMedintelProvider);
+    final auth = ref.watch(authProvider);
+    final patientName = auth.user?.fullName?.trim().isNotEmpty == true
+        ? auth.user!.fullName!.trim()
+        : 'Bạn';
+    final model = DashboardFromLocal.buildCaregiver(local, patientName);
 
     return Scaffold(
       backgroundColor: VitalisColors.background,
@@ -48,7 +57,14 @@ class CaregiverDashboardPage extends StatelessWidget {
                   items: model.medications,
                 ),
                 const SizedBox(height: 28),
-                RecentAlertsSection(alerts: model.alerts),
+                RecentAlertsSection(
+                  alerts: model.alerts,
+                  onActionTap: (alert) {
+                    if (alert.actionLabel == 'MỞ AI CHAT') {
+                      context.goNamed('ai');
+                    }
+                  },
+                ),
               ],
             ),
           ),

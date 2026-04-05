@@ -11,4 +11,6 @@ Cấu hình đầy đủ nằm trong `CLAUDE.md` và thư mục `.claude/` (skil
 - `/medintel-nckh` — MedIntel + PDF báo cáo + `doc.md`
 - `/nckh-bao-cao` — khung viết báo cáo
 - `/tai-lieu-tham-khao` — định dạng tham khảo
+- `/agentic-medical-adherence` — chat agentic tuân thủ điều trị + `agentic-medical.md`
+- `/medintel-db-local-sync` — `db-design.md`, local-first, `profile_id`
 - Subagent `nckh-reviewer` — rà soát `doc.md` (chỉ đọc/tìm)

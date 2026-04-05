@@ -19,8 +19,9 @@ class AdherenceHeroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
-    final pct = (adherenceFraction * 100).round();
-    final remaining = dosesTotal - dosesTaken;
+    final pct = dosesTotal <= 0 ? 0 : (adherenceFraction * 100).round();
+    final remaining = dosesTotal <= 0 ? 0 : dosesTotal - dosesTaken;
+    final effectiveFraction = dosesTotal <= 0 ? 0.0 : adherenceFraction;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -36,8 +37,8 @@ class AdherenceHeroCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               _AdherenceRing(
-                fraction: adherenceFraction,
-                percentLabel: '$pct%',
+                fraction: effectiveFraction,
+                percentLabel: dosesTotal <= 0 ? '—' : '$pct%',
               ),
               const SizedBox(width: 28),
               Expanded(
@@ -56,7 +57,9 @@ class AdherenceHeroCard extends StatelessWidget {
                     _StatRow(
                       icon: Icons.check_circle_rounded,
                       color: VitalisColors.statusSuccess,
-                      label: '$dosesTaken liều đã uống',
+                      label: dosesTotal <= 0
+                          ? 'Chưa có thuốc trong lịch hôm nay'
+                          : '$dosesTaken liều đã uống',
                       style: text.bodyMedium?.copyWith(
                         color: VitalisColors.statusSuccess,
                         fontWeight: FontWeight.w600,
@@ -66,13 +69,15 @@ class AdherenceHeroCard extends StatelessWidget {
                     _StatRow(
                       icon: Icons.access_time_rounded,
                       color: VitalisColors.neutral,
-                      label: '$remaining liều còn lại',
+                      label: dosesTotal <= 0
+                          ? 'Thêm thuốc để theo dõi tuân thủ'
+                          : '$remaining liều còn lại',
                       style: text.bodyMedium?.copyWith(
                         color: VitalisColors.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 18),
-                    _MiniProgressBar(fraction: adherenceFraction),
+                    _MiniProgressBar(fraction: effectiveFraction),
                   ],
                 ),
               ),

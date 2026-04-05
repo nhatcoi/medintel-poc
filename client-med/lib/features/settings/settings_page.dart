@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/display_fonts.dart';
 import '../../core/theme/vitalis_colors.dart';
 import '../../providers/display_preferences_provider.dart';
+import 'widgets/local_data_json_panel.dart';
 
 /// Cài đặt hiển thị: font + cỡ chữ (áp dụng toàn app).
 class SettingsPage extends ConsumerWidget {
@@ -91,6 +92,21 @@ class SettingsPage extends ConsumerWidget {
               ),
             ),
           ),
+          const SizedBox(height: 32),
+          Text(
+            'Gỡ lỗi',
+            style: text.titleMedium?.copyWith(
+              color: VitalisColors.primary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Toàn bộ state lưu cục bộ (thuốc, log liều, ghi chú, auth, prefs) — dùng để trace.',
+            style: text.bodyMedium?.copyWith(color: VitalisColors.onSurfaceVariant),
+          ),
+          const SizedBox(height: 16),
+          const LocalDataJsonPanel(refreshInterval: Duration(seconds: 5)),
         ],
       ),
     );

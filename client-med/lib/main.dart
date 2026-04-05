@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:med_intel_client/app/router.dart';
 import 'package:med_intel_client/core/constants/app_constants.dart';
 import 'package:med_intel_client/core/theme/app_theme.dart';
@@ -40,17 +41,30 @@ void main() async {
   );
 }
 
-class MedIntelApp extends ConsumerWidget {
+class MedIntelApp extends ConsumerStatefulWidget {
   const MedIntelApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MedIntelApp> createState() => _MedIntelAppState();
+}
+
+class _MedIntelAppState extends ConsumerState<MedIntelApp> {
+  late final GoRouter _router;
+
+  @override
+  void initState() {
+    super.initState();
+    _router = createMedIntelRouter(ref);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final display = ref.watch(displayPreferencesProvider);
 
     return MaterialApp.router(
       title: AppConstants.appName,
       theme: AppTheme.light(fontId: display.fontId),
-      routerConfig: appRouter,
+      routerConfig: _router,
       builder: (context, child) {
         final mq = MediaQuery.of(context);
         return MediaQuery(

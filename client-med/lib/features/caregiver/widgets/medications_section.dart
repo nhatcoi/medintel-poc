@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../data/caregiver_demo_data.dart';
+import '../data/caregiver_ui_model.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/vitalis_colors.dart';
 
@@ -50,10 +50,19 @@ class MedicationsSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          for (var i = 0; i < items.length; i++) ...[
-            if (i > 0) const SizedBox(height: 16),
-            _MedicationRow(item: items[i]),
-          ],
+          if (items.isEmpty)
+            Text(
+              'Chưa có thuốc trong danh sách cục bộ. Thêm qua Quét đơn hoặc AI Chat.',
+              style: text.bodyMedium?.copyWith(
+                color: VitalisColors.onSurfaceVariant,
+                height: 1.4,
+              ),
+            )
+          else
+            for (var i = 0; i < items.length; i++) ...[
+              if (i > 0) const SizedBox(height: 16),
+              _MedicationRow(item: items[i]),
+            ],
         ],
       ),
     );

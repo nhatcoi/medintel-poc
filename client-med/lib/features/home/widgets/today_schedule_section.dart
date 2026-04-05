@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/vitalis_colors.dart';
-import '../data/home_demo_data.dart';
+import '../data/home_ui_model.dart';
 
 /// Danh sách thuốc hôm nay — không divider, khoảng cách dọc phân tầng.
 class TodayScheduleSection extends StatelessWidget {

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/vitalis_colors.dart';
+import '../../providers/local_medintel_provider.dart';
 import '../../services/api_service.dart';
 import 'data/ai_chat_models.dart';
 import 'data/chat_repository.dart';
@@ -11,27 +13,20 @@ import 'widgets/ai_chat_top_bar.dart';
 import 'widgets/ai_chat_typing_indicator.dart';
 import 'widgets/ai_chat_welcome_block.dart';
 
-class AiChatPage extends StatefulWidget {
+class AiChatPage extends ConsumerStatefulWidget {
   const AiChatPage({super.key});
 
   @override
-  State<AiChatPage> createState() => _AiChatPageState();
+  ConsumerState<AiChatPage> createState() => _AiChatPageState();
 }
 
-class _AiChatPageState extends State<AiChatPage> {
+class _AiChatPageState extends ConsumerState<AiChatPage> {
   late final TextEditingController _composer;
   late final ScrollController _scroll;
   late final ChatRepository _repo;
 
   final List<AiChatItem> _messages = [];
   bool _isTyping = false;
-
-  static const List<String> _quickReplies = [
-    'Liều tiếp theo?',
-    'Kiểm tra tác dụng phụ',
-    'Tuân thủ hôm nay',
-    'Đặt nhắc nhở',
-  ];
 
   @override
   void initState() {
@@ -60,11 +55,25 @@ class _AiChatPageState extends State<AiChatPage> {
     _scrollToBottom();
 
     try {
-      final reply = await _repo.sendMessage(trimmed);
+      final result = await _repo.sendMessage(trimmed);
       if (!mounted) return;
+
+      final summaries =
+          await ref.read(localMedintelProvider.notifier).applyAgentToolCalls(result.toolCalls);
+
+      String? callout;
+      if (summaries.isNotEmpty) {
+        callout = summaries.join('\n');
+      }
+
       setState(() {
         _isTyping = false;
-        _messages.add(AiChatAssistantTurn(body: reply, timeLabel: _nowLabel()));
+        _messages.add(AiChatAssistantTurn(
+          body: result.reply,
+          timeLabel: _nowLabel(),
+          suggestedActions: result.suggestedActions,
+          callout: callout,
+        ));
       });
     } catch (_) {
       if (!mounted) return;
@@ -98,8 +107,18 @@ class _AiChatPageState extends State<AiChatPage> {
     return '$h:$m';
   }
 
-  bool get _showQuickReplies =>
-      !_isTyping && _messages.isNotEmpty && _messages.last is AiChatAssistantTurn;
+  bool get _showQuickReplies {
+    if (_isTyping || _messages.isEmpty) return false;
+    final last = _messages.last;
+    return last is AiChatAssistantTurn && last.suggestedActions.isNotEmpty;
+  }
+
+  List<SuggestedChatAction> get _lastSuggestedActions {
+    if (_messages.isEmpty) return const [];
+    final last = _messages.last;
+    if (last is AiChatAssistantTurn) return last.suggestedActions;
+    return const [];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -135,7 +154,7 @@ class _AiChatPageState extends State<AiChatPage> {
                 const SizedBox(height: 8),
                 if (_showQuickReplies)
                   AiChatQuickReplies(
-                    labels: _quickReplies,
+                    actions: _lastSuggestedActions,
                     onSelected: _sendMessage,
                   ),
               ],

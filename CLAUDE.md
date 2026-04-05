@@ -9,6 +9,7 @@
 | Thành phần | Đường dẫn |
 |------------|-----------|
 | Tài liệu đề tài chính | `doc.md` |
+| Thiết kế CSDL (local-first) | `db-design.md` |
 | Bộ nhớ / quy ước Claude | `CLAUDE.md` (file này) |
 | Ghi đè cá nhân (không commit) | `CLAUDE.local.md` |
 | Skills (lệnh `/tên-skill`) | `.claude/skills/<tên>/SKILL.md` |
@@ -34,4 +35,6 @@
 - `/medintel-nckh` — ngữ cảnh đề tài MedIntel + `doc.md` + `bao-cao-nckh-med-2.pdf`
 - `/nckh-bao-cao` — khung viết mục báo cáo NCKH
 - `/tai-lieu-tham-khao` — định dạng tham khảo
+- `/agentic-medical-adherence` — thiết kế chat agentic tuân thủ điều trị + `agentic-medical.md`
+- `/medintel-db-local-sync` — schema `db-design.md`, profiles/sync, không IAM cổ điển
 - Subagent `nckh-reviewer` — rà soát `doc.md` và tính nhất quán (chỉ đọc/tìm)
