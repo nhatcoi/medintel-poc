@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.api.v1.router import api_router
 from app.core.config import settings
+from app.core.db_bootstrap import ensure_postgres_database
 from app.middleware.http_logging import HttpLoggingMiddleware
 import app.models  # noqa: F401 — đăng ký metadata
 
@@ -22,6 +23,7 @@ logging.getLogger("medintel.http").setLevel(logging.INFO)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    ensure_postgres_database(settings.database_url)
     if settings.create_tables_on_startup:
         Base.metadata.create_all(bind=engine)
         from app.models.medical import DiseaseCategory

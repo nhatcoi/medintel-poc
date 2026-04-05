@@ -88,8 +88,12 @@ class MedicationLog(Base, TimestampMixin):
     __tablename__ = "medication_logs"
 
     id: Mapped[uuid.UUID] = mapped_column("log_id", GUID, primary_key=True, default=uuid.uuid4)
+    # use_alter: tránh lỗi thứ tự DDL khi metadata sắp xếp bảng; FK trỏ đúng cột schedule_id
     schedule_id: Mapped[uuid.UUID] = mapped_column(
-        GUID, ForeignKey("medication_schedules.schedule_id"), nullable=False, index=True
+        GUID,
+        ForeignKey("medication_schedules.schedule_id", use_alter=True),
+        nullable=False,
+        index=True,
     )
     profile_id: Mapped[uuid.UUID] = mapped_column(
         GUID, ForeignKey("profiles.profile_id"), nullable=False, index=True

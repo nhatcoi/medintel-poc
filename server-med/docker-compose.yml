@@ -1,0 +1,23 @@
+# Chỉ PostgreSQL — không mount init SQL; schema do FastAPI (SQLAlchemy create_all) tạo.
+# DB mới: medintel_orm + volume medintel_pgdata_orm (tránh schema cũ lệch cột).
+# Lần đầu: docker compose up -d
+# Reset sạch: docker compose down -v && docker compose up -d
+# Kết nối: DATABASE_URL=...@localhost:5432/medintel_orm
+# Nếu cổng 5432 trùng container khác → đổi cổng host hoặc dừng container kia.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: medintel-postgres-orm
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: medintel
+      POSTGRES_PASSWORD: medintel
+      POSTGRES_DB: medintel_orm
+    ports:
+      - "5432:5432"
+    volumes:
+      - medintel_pgdata_orm:/var/lib/postgresql/data
+
+volumes:
+  medintel_pgdata_orm:

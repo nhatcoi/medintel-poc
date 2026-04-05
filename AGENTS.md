@@ -13,4 +13,5 @@ Cấu hình đầy đủ nằm trong `CLAUDE.md` và thư mục `.claude/` (skil
 - `/tai-lieu-tham-khao` — định dạng tham khảo
 - `/agentic-medical-adherence` — chat agentic tuân thủ điều trị + `agentic-medical.md`
 - `/medintel-db-local-sync` — `db-design.md`, local-first, `profile_id`
+- `/medintel-architecture` — `architecture.md`, FastAPI, Postgres, tool layer
 - Subagent `nckh-reviewer` — rà soát `doc.md` (chỉ đọc/tìm)

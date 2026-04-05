@@ -29,6 +29,9 @@ class Profile(Base, TimestampMixin):
     medical_records: Mapped[list["MedicalRecord"]] = relationship(
         "MedicalRecord", back_populates="profile"
     )
+    chat_sessions: Mapped[list["ChatSession"]] = relationship(
+        "ChatSession", back_populates="profile", cascade="all, delete-orphan"
+    )
     chat_messages: Mapped[list["ChatMessage"]] = relationship("ChatMessage", back_populates="profile")
 
 

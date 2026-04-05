@@ -22,10 +22,22 @@ class ToolCall(BaseModel):
 
 class ChatRequest(BaseModel):
     text: str
+    profile_id: str | None = Field(
+        default=None,
+        description="UUID profile — nếu có, lưu lượt chat + agentic payload vào DB",
+    )
+    session_id: str | None = Field(
+        default=None,
+        description="UUID phiên chat có sẵn; bỏ trống sẽ tạo chat_sessions mới",
+    )
 
 
 class ChatResponse(BaseModel):
     reply: str
+    session_id: str | None = Field(
+        default=None,
+        description="UUID phiên chat (khi đã lưu DB); gửi lại ở request tiếp theo",
+    )
     suggested_actions: list[SuggestedAction] = Field(default_factory=list)
     tool_calls: list[ToolCall] = Field(
         default_factory=list,

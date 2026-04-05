@@ -10,6 +10,7 @@
 |------------|-----------|
 | Tài liệu đề tài chính | `doc.md` |
 | Thiết kế CSDL (local-first) | `db-design.md` |
+| Kiến trúc AI agent / stack | `architecture.md` |
 | Bộ nhớ / quy ước Claude | `CLAUDE.md` (file này) |
 | Ghi đè cá nhân (không commit) | `CLAUDE.local.md` |
 | Skills (lệnh `/tên-skill`) | `.claude/skills/<tên>/SKILL.md` |
@@ -37,4 +38,5 @@
 - `/tai-lieu-tham-khao` — định dạng tham khảo
 - `/agentic-medical-adherence` — thiết kế chat agentic tuân thủ điều trị + `agentic-medical.md`
 - `/medintel-db-local-sync` — schema `db-design.md`, profiles/sync, không IAM cổ điển
+- `/medintel-architecture` — kiến trúc 3 lớp, tools, Postgres/pgvector, `architecture.md`
 - Subagent `nckh-reviewer` — rà soát `doc.md` và tính nhất quán (chỉ đọc/tìm)
