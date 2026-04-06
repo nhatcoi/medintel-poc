@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/vitalis_colors.dart';
 import '../../providers/local_medintel_provider.dart';
+import '../../providers/providers.dart';
 import '../../services/api_service.dart';
 import 'data/ai_chat_models.dart';
 import 'data/chat_repository.dart';
@@ -27,6 +28,8 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
 
   final List<AiChatItem> _messages = [];
   bool _isTyping = false;
+  /// Nối tiếp phiên chat đã lưu trên server (POST /chat/message trả về).
+  String? _chatSessionId;
 
   @override
   void initState() {
@@ -55,8 +58,21 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
     _scrollToBottom();
 
     try {
-      final result = await _repo.sendMessage(trimmed);
+      final auth = ref.read(authProvider);
+      final profileId = auth.user?.id;
+      final hasProfile = profileId != null && profileId.isNotEmpty;
+
+      final result = await _repo.sendMessage(
+        trimmed,
+        profileId: hasProfile ? profileId : null,
+        sessionId: _chatSessionId,
+        includeMedicationContext: hasProfile,
+      );
       if (!mounted) return;
+
+      if (result.sessionId != null && result.sessionId!.isNotEmpty) {
+        _chatSessionId = result.sessionId;
+      }
 
       final summaries =
           await ref.read(localMedintelProvider.notifier).applyAgentToolCalls(result.toolCalls);

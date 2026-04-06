@@ -28,7 +28,15 @@ Nếu không có thao tác lưu nào phù hợp, để tool_calls: [].
 Chỉ trả về MỘT object JSON (không markdown, không ```):
 {"reply":"...","tool_calls":[...],"suggested_actions":[{"label":"...","prompt":"..."}]}
 
-suggested_actions: 0–4 chip gợi ý câu tiếp theo (có thể rỗng)."""
+suggested_actions — chip gợi ý câu tiếp theo; SỐ LƯỢNG linh hoạt theo ngữ cảnh (thường 0–6, tối đa 6). Tránh lúc nào cũng đủ 6 chip giống khuôn; tránh lặp cụm từ y hệt giữa các lượt.
+
+Quy tắc chọn số lượng & nội dung:
+- Chào hỏi / xã giao / “ok”, “cảm ơn”, “chào bạn” (không hỏi thuốc, không triệu chứng): 1–2 chip nhẹ, tự nhiên — ví dụ mời tiếp tục: “Tôi đang uống thuốc gì hợp lý?”, “Nhắc tôi uống thuốc được không?”. Có thể 0 nếu reply đã kết thúc gọn (vd. chỉ “chào bạn”).
+- Hỏi về một thuốc cụ thể (là gì, công dụng, cách dùng…): 4–6 chip hữu ích, trộn “hành động trong app” và “hỏi sâu hơn” — ví dụ nhắc uống, lưu vào tủ thuốc, ghi triệu chứng/tác dụng phụ, liều theo tuổi/cân nặng, bảo quản/pha, tương tác thuốc-khác hoặc chống chỉ định. Đổi cách diễn đạt label cho tự nhiên (không bắt buộc thứ tự cố định).
+- Người dùng mô tả triệu chứng / khó chịu / “đang bị…”: ưu tiên chip liên quan theo dõi & an toàn — ghi nhật ký triệu chứng, khi nào cần gặp bác sĩ, thuốc đang dùng có liên quan không, gợi ý thói quen/nghỉ ngơi/uống nước (không chẩn đoán). 2–5 chip tùy mức độ chi tiết câu hỏi.
+- Câu ngắn, đã rõ ý định lưu (uống thuốc, thêm thuốc…): ưu tiên tool_calls; suggested_actions có thể ít (1–3) hoặc 0.
+
+Mỗi phần tử: {"label":"...","prompt":"..."}. Label có thể có emoji ở đầu nếu hợp UI; prompt là câu user gửi tiếp, bám đúng tên thuốc / triệu chứng vừa nói."""
     if extra_context and extra_context.strip():
         return f"{base}\n\n{extra_context.strip()}"
     return base

@@ -7,8 +7,8 @@ from typing import Any
 
 from app.services.agent.registry import ALLOWED_TOOLS
 
-
-def normalize_suggested_actions(raw: object, *, max_items: int = 5) -> list[dict[str, str]]:
+def normalize_suggested_actions(raw: object, *, max_items: int = 8) -> list[dict[str, str]]:
+    """Giữ nguyên số lượng do LLM chọn (tối đa max_items); không đệm chip cứng."""
     if not isinstance(raw, list):
         return []
     out: list[dict[str, str]] = []
@@ -21,7 +21,7 @@ def normalize_suggested_actions(raw: object, *, max_items: int = 5) -> list[dict
             continue
         out.append(
             {
-                "label": label[:80],
+                "label": label[:120],
                 "prompt": (prompt or label)[:800],
             }
         )
