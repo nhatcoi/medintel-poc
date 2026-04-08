@@ -9,10 +9,14 @@ class QuickActionsRow extends StatelessWidget {
     super.key,
     this.onScanTap,
     this.onChatTap,
+    this.onMedicationTap,
+    this.onReminderTap,
   });
 
   final VoidCallback? onScanTap;
   final VoidCallback? onChatTap;
+  final VoidCallback? onMedicationTap;
+  final VoidCallback? onReminderTap;
 
   @override
   Widget build(BuildContext context) {
@@ -59,6 +63,38 @@ class QuickActionsRow extends StatelessWidget {
                     colors: [Color(0xFF2E7D32), Color(0xFF388E3C)],
                   ),
                   onTap: onChatTap,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _ActionTile(
+                  icon: Icons.medication_outlined,
+                  label: 'Quản lý thuốc',
+                  subtitle: 'Thêm/Sửa danh sách',
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF4A148C), Color(0xFF6A1B9A)],
+                  ),
+                  onTap: onMedicationTap,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _ActionTile(
+                  icon: Icons.alarm_on_outlined,
+                  label: 'Nhắc uống',
+                  subtitle: 'Xác nhận đã uống',
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF0D47A1), Color(0xFF1565C0)],
+                  ),
+                  onTap: onReminderTap,
                 ),
               ),
             ],

@@ -32,6 +32,30 @@ from ai.rag.chunker import chunk_drug
 from database.session import Base, engine, SessionLocal
 
 
+def bump_kb_version(session) -> int:
+    """Tăng kb_version trong system_configs → invalidate CAG cache tự động."""
+    from app.models.reporting import SystemConfig
+
+    row = session.query(SystemConfig).filter_by(config_key="kb_version").first()
+    if row is None:
+        new_ver = settings.kb_version + 1
+        row = SystemConfig(
+            config_key="kb_version",
+            config_value=str(new_ver),
+            description="RAG knowledge base version — dùng để invalidate CAG cache",
+        )
+        session.add(row)
+    else:
+        current = int(row.config_value or "1")
+        new_ver = current + 1
+        row.config_value = str(new_ver)
+    session.commit()
+    # Cập nhật in-memory settings để requests trong cùng process đọc đúng
+    settings.kb_version = new_ver
+    print(f"[ingest] kb_version → {new_ver} (CAG cache invalidated)")
+    return new_ver
+
+
 def _ensure_extensions(session: Session) -> None:
     """Tạo extension vector + pg_trgm nếu chưa có."""
     for ext in ("vector", "pg_trgm"):

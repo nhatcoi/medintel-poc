@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../core/theme/vitalis_colors.dart';
+import '../adherence/adherence_placeholder.dart';
 import '../ai_chat/ai_chat_page.dart';
 import '../home/home_page.dart';
 import '../prescription_scan/prescription_scan_page.dart';
@@ -34,52 +34,6 @@ class HistoryBranchPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _BranchBody(
-      title: 'History',
-      subtitle: 'Nhật ký uống thuốc & cảnh báo',
-      icon: Icons.history_rounded,
-    );
-  }
-}
-
-class _BranchBody extends StatelessWidget {
-  const _BranchBody({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-  });
-
-  final String title;
-  final String subtitle;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-
-    return CustomScrollView(
-      slivers: [
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 56, color: VitalisColors.primary.withValues(alpha: 0.85)),
-                const SizedBox(height: 20),
-                Text(title, style: text.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
-                const SizedBox(height: 8),
-                Text(
-                  subtitle,
-                  textAlign: TextAlign.center,
-                  style: text.bodyLarge?.copyWith(color: VitalisColors.onSurfaceVariant),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
+    return const AdherencePlaceholder();
   }
 }

@@ -9,6 +9,8 @@ from app.models.chat import ChatMessage, ChatSession
 from app.models.habits import HabitCategory, HabitLog, HabitReminder, HealthHabit
 from app.models.care import CareGroup, CareGroupMember, CareGroupPatient, CaregiverPatientLink
 from app.models.rag_drug import TbdfDrug, TbdfDrugChunk
+from app.models.patient_memory import PatientMemory
+from app.models.response_cache import ResponseCache
 from app.models.reporting import ComplianceReport, Notification, SystemConfig, SystemStatistic
 
 __all__ = [
@@ -40,4 +42,6 @@ __all__ = [
     "SystemConfig",
     "TbdfDrug",
     "TbdfDrugChunk",
+    "PatientMemory",
+    "ResponseCache",
 ]

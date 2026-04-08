@@ -18,6 +18,29 @@ class Settings(BaseSettings):
     embedding_dim: int = 384
     # RAG
     rag_top_k: int = 8
+    rag_min_similarity: float = 0.72  # ngưỡng coi RAG là "đủ tốt"; dưới ngưỡng → fallback Agent 2
+
+    # CAG (Cache-Augmented Generation)
+    cag_enabled: bool = True
+    cag_default_ttl_hours: int = 24
+    cag_max_query_len: int = 500
+    kb_version: int = 1  # bump khi ingest dữ liệu mới để invalidate cache cũ
+
+    # Agent 2 — External fallback (Tavily)
+    tavily_api_key: str = ""
+    tavily_max_results: int = 5
+    tavily_enabled: bool = True
+    tavily_trusted_domains: list[str] = [
+        "drugs.com",
+        "medlineplus.gov",
+        "mayoclinic.org",
+        "nih.gov",
+        "who.int",
+        "ncbi.nlm.nih.gov",
+        "vinmec.com",
+        "tamanhhospital.vn",
+        "bvdaihoc.com.vn",
+    ]
     # Profile UUID fallback khi scan không gửi user_id (seed demo trong main.py)
     default_prescription_user_id: str = "00000000-0000-0000-0000-000000000001"
 

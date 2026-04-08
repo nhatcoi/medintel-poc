@@ -66,6 +66,8 @@ class HomePage extends ConsumerWidget {
                 QuickActionsRow(
                   onScanTap: () => context.goNamed('scan'),
                   onChatTap: () => context.goNamed('ai'),
+                  onMedicationTap: () => context.pushNamed('medication'),
+                  onReminderTap: () => context.pushNamed('reminder'),
                 ),
               ],
             ),

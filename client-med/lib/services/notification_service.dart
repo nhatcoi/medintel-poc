@@ -16,4 +16,25 @@ final class NotificationService {
   }
 
   static FlutterLocalNotificationsPlugin get plugin => _plugin;
+
+  static Future<void> showMedicationReminder({
+    required int id,
+    required String title,
+    required String body,
+  }) async {
+    const android = AndroidNotificationDetails(
+      'medintel_medication',
+      'Nhắc uống thuốc',
+      channelDescription: 'Thông báo nhắc uống thuốc hằng ngày',
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+    const ios = DarwinNotificationDetails();
+    await _plugin.show(
+      id,
+      title,
+      body,
+      const NotificationDetails(android: android, iOS: ios),
+    );
+  }
 }

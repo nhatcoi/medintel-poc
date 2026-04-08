@@ -20,6 +20,17 @@ class ToolCall(BaseModel):
     args: dict[str, Any] = Field(default_factory=dict)
 
 
+class Citation(BaseModel):
+    """Nguồn tham chiếu cho câu trả lời."""
+
+    title: str = Field(..., description="Tên nguồn ngắn gọn")
+    url: str | None = Field(default=None, description="URL nguồn (nếu có)")
+    source_type: str = Field(
+        default="internal",
+        description="Loại nguồn: internal | external | model",
+    )
+
+
 class ChatRequest(BaseModel):
     text: str
     profile_id: str | None = Field(
@@ -38,6 +49,20 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     reply: str
+    source_type: str = Field(
+        default="internal",
+        description="Nguồn chính tạo câu trả lời: internal | external | mixed | model",
+    )
+    confidence: float = Field(
+        default=0.6,
+        ge=0.0,
+        le=1.0,
+        description="Độ tin cậy tự ước lượng của hệ thống trong khoảng [0,1]",
+    )
+    citations: list[Citation] = Field(
+        default_factory=list,
+        description="Danh sách nguồn tham chiếu dùng để trả lời",
+    )
     session_id: str | None = Field(
         default=None,
         description="UUID phiên chat (khi đã lưu DB); gửi lại ở request tiếp theo",
