@@ -63,5 +63,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = AuthState(status: OnboardStatus.completed, user: result.user, token: result.token);
   }
 
+  /// Xóa trạng thái auth cục bộ và đưa app về onboarding.
+  Future<void> clearLocalAuth() async {
+    await _prefs?.remove(_tokenKey);
+    await _prefs?.remove(_userIdKey);
+    await _prefs?.remove(_userNameKey);
+    await _prefs?.remove(_setupDoneKey);
+    _api.setAuthToken('');
+    state = const AuthState(status: OnboardStatus.firstTime);
+  }
+
   String get userName => state.user?.fullName ?? 'Bạn';
 }

@@ -5,11 +5,47 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/display_fonts.dart';
 import '../../core/theme/vitalis_colors.dart';
 import '../../providers/display_preferences_provider.dart';
+import '../../providers/local_medintel_provider.dart';
+import '../../providers/shared_preferences_provider.dart';
+import '../../providers/providers.dart';
 import 'widgets/local_data_json_panel.dart';
 
 /// Cài đặt hiển thị: font + cỡ chữ (áp dụng toàn app).
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
+
+  Future<void> _clearAllData(BuildContext context, WidgetRef ref) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xóa toàn bộ dữ liệu?'),
+        content: const Text(
+          'Thao tác này sẽ xóa dữ liệu cục bộ (thuốc, log, cấu hình hiển thị, thông tin onboarding).',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Xóa dữ liệu'),
+          ),
+        ],
+      ),
+    );
+    if (shouldDelete != true || !context.mounted) return;
+
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs?.clear();
+    await ref.read(authProvider.notifier).clearLocalAuth();
+    ref.invalidate(localMedintelProvider);
+    ref.invalidate(displayPreferencesProvider);
+
+    if (context.mounted) {
+      context.go('/welcome');
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -107,6 +143,16 @@ class SettingsPage extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           const LocalDataJsonPanel(refreshInterval: Duration(seconds: 5)),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: () => _clearAllData(context, ref),
+            icon: const Icon(Icons.delete_forever_outlined),
+            label: const Text('Xóa data cục bộ và quay về Welcome'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+              side: BorderSide(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.5)),
+            ),
+          ),
         ],
       ),
     );

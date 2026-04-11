@@ -5,15 +5,16 @@ import '../../providers/providers.dart';
 import '../../services/notification_service.dart';
 import '../treatment/data/treatment_models.dart';
 import '../treatment/data/treatment_provider.dart';
+import '../treatment/widgets/treatment_ui.dart';
 
-class ReminderPlaceholder extends ConsumerStatefulWidget {
-  const ReminderPlaceholder({super.key});
+class ReminderPage extends ConsumerStatefulWidget {
+  const ReminderPage({super.key});
 
   @override
-  ConsumerState<ReminderPlaceholder> createState() => _ReminderPlaceholderState();
+  ConsumerState<ReminderPage> createState() => _ReminderPageState();
 }
 
-class _ReminderPlaceholderState extends ConsumerState<ReminderPlaceholder> {
+class _ReminderPageState extends ConsumerState<ReminderPage> {
   @override
   void initState() {
     super.initState();
@@ -35,8 +36,14 @@ class _ReminderPlaceholderState extends ConsumerState<ReminderPlaceholder> {
           status: status,
         );
     if (mounted) {
+      final msg = switch (status) {
+        'taken' => 'Đã ghi nhận: ${med.name} đã uống đúng liều',
+        'late' => 'Đã ghi nhận: ${med.name} uống trễ',
+        'missed' => 'Đã ghi nhận: bỏ lỡ ${med.name}',
+        _ => 'Đã ghi nhận ${med.name}: $status',
+      };
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Đã ghi nhận ${med.name}: $status')),
+        SnackBar(content: Text(msg)),
       );
     }
   }
@@ -44,32 +51,70 @@ class _ReminderPlaceholderState extends ConsumerState<ReminderPlaceholder> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(treatmentProvider);
+    final reminderCount = state.items.where((m) => m.scheduleTimes.isNotEmpty).length;
     return Scaffold(
       appBar: AppBar(title: const Text('Nhắc thuốc hôm nay')),
       body: RefreshIndicator(
         onRefresh: _reload,
         child: ListView(
           children: [
+            TreatmentHeaderCard(
+              title: 'Lịch thuốc hôm nay',
+              subtitle: 'Ưu tiên các liều cần uống trong ngày',
+              value: '$reminderCount',
+              icon: Icons.alarm_on_outlined,
+            ),
             if (state.loading) const LinearProgressIndicator(),
+            if (state.error != null) TreatmentErrorBanner(message: state.error!, onRetry: _reload),
             if (state.items.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(24),
-                child: Text('Chưa có lịch thuốc để nhắc.'),
+              const TreatmentEmptyCard(
+                icon: Icons.notifications_paused_outlined,
+                title: 'Chưa có lịch thuốc để nhắc',
+                description: 'Hãy thêm thuốc và giờ uống ở màn Quản lý thuốc.',
               ),
             for (final med in state.items)
               Card(
-                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
                 child: Padding(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(14),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(med.name, style: Theme.of(context).textTheme.titleMedium),
-                      const SizedBox(height: 4),
-                      Text('Giờ: ${med.scheduleTimes.isEmpty ? "—" : med.scheduleTimes.join(", ")}'),
-                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              med.name,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                          ),
+                          TreatmentInfoChip(
+                            label: med.scheduleTimes.isEmpty ? 'Không giờ cố định' : 'Có lịch',
+                            icon: Icons.schedule_outlined,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
                       Wrap(
                         spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final time in med.scheduleTimes)
+                            TreatmentInfoChip(
+                              label: time,
+                              icon: Icons.access_time_outlined,
+                            ),
+                          if (med.scheduleTimes.isEmpty)
+                            const TreatmentInfoChip(
+                              label: 'Chưa có giờ uống',
+                              icon: Icons.info_outline,
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
                         children: [
                           FilledButton(
                             onPressed: () async {

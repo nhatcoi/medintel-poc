@@ -13,31 +13,27 @@ class PatientSetupPage extends ConsumerStatefulWidget {
 }
 
 class _PatientSetupPageState extends ConsumerState<PatientSetupPage> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameCtrl = TextEditingController();
-  final _dobCtrl = TextEditingController();
-  final _notesCtrl = TextEditingController();
-  String? _gender;
+  final _firstNameCtrl = TextEditingController();
+  final _lastNameCtrl = TextEditingController();
   bool _loading = false;
   String? _error;
 
   @override
   void dispose() {
-    _nameCtrl.dispose();
-    _dobCtrl.dispose();
-    _notesCtrl.dispose();
+    _firstNameCtrl.dispose();
+    _lastNameCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    final first = _firstNameCtrl.text.trim();
+    final last = _lastNameCtrl.text.trim();
+    if (first.isEmpty || last.isEmpty) return;
+
     setState(() { _loading = true; _error = null; });
     try {
       await ref.read(authProvider.notifier).completeSetup(
-        fullName: _nameCtrl.text.trim(),
-        dateOfBirth: _dobCtrl.text.trim().isEmpty ? null : _dobCtrl.text.trim(),
-        gender: _gender,
-        medicalNotes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+        fullName: '$first $last',
       );
       if (mounted) context.go('/home');
     } catch (e) {
@@ -52,161 +48,154 @@ class _PatientSetupPageState extends ConsumerState<PatientSetupPage> {
     }
   }
 
-  Future<void> _pickDate() async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime(now.year - 25),
-      firstDate: DateTime(1920),
-      lastDate: now,
-    );
-    if (picked != null) {
-      _dobCtrl.text = '${picked.day.toString().padLeft(2, '0')}'
-          '/${picked.month.toString().padLeft(2, '0')}'
-          '/${picked.year}';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
+    final canNext = !_loading &&
+        _firstNameCtrl.text.trim().isNotEmpty &&
+        _lastNameCtrl.text.trim().isNotEmpty;
 
     return Scaffold(
-      backgroundColor: VitalisColors.background,
+      backgroundColor: VitalisColors.primaryContainer,
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+              child: Row(
                 children: [
-                  const SizedBox(height: 24),
-                  Container(
-                    width: 56, height: 56,
-                    decoration: BoxDecoration(
-                      color: VitalisColors.primary,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Icon(Icons.person_add_rounded, color: Colors.white, size: 28),
+                  IconButton(
+                    onPressed: () {
+                      if (context.canPop()) {
+                        context.pop();
+                      } else {
+                        context.go('/welcome');
+                      }
+                    },
+                    icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
                   ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Thông tin cá nhân',
-                    style: text.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: VitalisColors.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Giúp MedIntel cá nhân hóa trải nghiệm cho bạn',
-                    style: text.bodyMedium?.copyWith(color: VitalisColors.onSurfaceVariant),
-                  ),
-                  const SizedBox(height: 28),
-
-                  // Full name *
-                  TextFormField(
-                    controller: _nameCtrl,
-                    textInputAction: TextInputAction.next,
-                    decoration: _inputDecor('Họ và tên *', Icons.person_outline),
-                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Vui lòng nhập tên' : null,
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Date of birth
-                  TextFormField(
-                    controller: _dobCtrl,
-                    readOnly: true,
-                    onTap: _pickDate,
-                    decoration: _inputDecor('Ngày sinh', Icons.calendar_today_outlined),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Gender
-                  DropdownButtonFormField<String>(
-                    initialValue: _gender,
-                    decoration: _inputDecor('Giới tính', Icons.wc_outlined),
-                    items: const [
-                      DropdownMenuItem(value: 'male', child: Text('Nam')),
-                      DropdownMenuItem(value: 'female', child: Text('Nữ')),
-                      DropdownMenuItem(value: 'other', child: Text('Khác')),
-                    ],
-                    onChanged: (v) => setState(() => _gender = v),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Medical notes
-                  TextFormField(
-                    controller: _notesCtrl,
-                    maxLines: 3,
-                    decoration: _inputDecor('Ghi chú y tế (dị ứng, bệnh nền...)', Icons.medical_information_outlined),
-                  ),
-
-                  if (_error != null) ...[
-                    const SizedBox(height: 14),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF3F0),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.error_outline, color: Color(0xFFD32F2F), size: 18),
-                          const SizedBox(width: 8),
-                          Expanded(child: Text(_error!, style: const TextStyle(color: Color(0xFFD32F2F), fontSize: 13))),
-                        ],
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 28),
-
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: _loading ? null : _submit,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: VitalisColors.primary,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                        textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                      ),
-                      child: _loading
-                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : const Text('Hoàn tất'),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
                 ],
               ),
             ),
-          ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(26, 8, 26, 22),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    alignment: Alignment.center,
+                    child: const Icon(Icons.assignment_outlined, color: VitalisColors.primary),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    "Let's get to know you better!\nWhat's your name?",
+                    style: text.headlineSmall?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      height: 1.25,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: VitalisColors.surfaceContainerLowest,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(28),
+                    topRight: Radius.circular(28),
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+                  child: Column(
+                    children: [
+                      TextField(
+                        controller: _firstNameCtrl,
+                        onChanged: (_) => setState(() {}),
+                        textInputAction: TextInputAction.next,
+                        style: const TextStyle(color: VitalisColors.onSurface),
+                        decoration: _lineDecor('First name*'),
+                      ),
+                      const SizedBox(height: 20),
+                      TextField(
+                        controller: _lastNameCtrl,
+                        onChanged: (_) => setState(() {}),
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (_) => canNext ? _submit() : null,
+                        style: const TextStyle(color: VitalisColors.onSurface),
+                        decoration: _lineDecor('Last name*'),
+                      ),
+                      if (_error != null) ...[
+                        const SizedBox(height: 14),
+                        Text(
+                          _error!,
+                          style: text.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                      ],
+                      const Spacer(),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          onPressed: canNext ? _submit : null,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: canNext
+                                ? VitalisColors.primary
+                                : VitalisColors.outlineVariantBase.withValues(alpha: 0.5),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                          child: _loading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                )
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Text('Next'),
+                                    const SizedBox(width: 8),
+                                    Icon(Icons.chevron_right_rounded, color: Colors.white.withValues(alpha: 0.9)),
+                                  ],
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  InputDecoration _inputDecor(String label, IconData icon) {
+  InputDecoration _lineDecor(String label) {
     return InputDecoration(
       labelText: label,
-      prefixIcon: Icon(icon, size: 20),
-      filled: true,
-      fillColor: VitalisColors.surfaceContainerLowest,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: VitalisColors.outlineVariantBase.withValues(alpha: 0.2)),
+      labelStyle: const TextStyle(color: VitalisColors.onSurfaceVariant),
+      enabledBorder: UnderlineInputBorder(
+        borderSide: BorderSide(color: VitalisColors.outlineVariantBase.withValues(alpha: 0.5)),
       ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: VitalisColors.outlineVariantBase.withValues(alpha: 0.2)),
+      focusedBorder: const UnderlineInputBorder(
+        borderSide: BorderSide(color: VitalisColors.primary, width: 1.4),
       ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: VitalisColors.primary, width: 1.5),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
     );
   }
 }

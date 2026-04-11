@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/vitalis_colors.dart';
 import '../data/home_ui_model.dart';
 
 /// Danh sách thuốc hôm nay — không divider, khoảng cách dọc phân tầng.
 class TodayScheduleSection extends StatelessWidget {
-  const TodayScheduleSection({super.key, required this.items});
+  const TodayScheduleSection({
+    super.key,
+    required this.items,
+    this.onViewCalendarTap,
+    this.onMarkTakenTap,
+    this.onRescheduleTap,
+  });
 
   final List<HomeDoseItem> items;
+  final VoidCallback? onViewCalendarTap;
+  final VoidCallback? onMarkTakenTap;
+  final VoidCallback? onRescheduleTap;
 
   @override
   Widget build(BuildContext context) {
@@ -25,21 +33,21 @@ class TodayScheduleSection extends StatelessWidget {
                 child: Text(
                   'LỊCH THUỐC HÔM NAY',
                   style: text.labelMedium?.copyWith(
-                    color: VitalisColors.neutral,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.0,
+                    color: VitalisColors.onSurface,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
-              TextButton(
-                onPressed: () {},
+              TextButton.icon(
+                onPressed: onViewCalendarTap,
                 style: TextButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: Text(
-                  'Xem tất cả',
+                icon: const Icon(Icons.calendar_month_outlined, size: 16),
+                label: Text(
+                  'View Calendar',
                   style: text.labelMedium?.copyWith(
                     color: VitalisColors.primary,
                     fontWeight: FontWeight.w600,
@@ -49,7 +57,13 @@ class TodayScheduleSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          ...items.map((item) => _DoseItemTile(item: item)),
+          ...items.map(
+            (item) => _DoseItemTile(
+              item: item,
+              onMarkTakenTap: onMarkTakenTap,
+              onRescheduleTap: onRescheduleTap,
+            ),
+          ),
         ],
       ),
     );
@@ -57,70 +71,91 @@ class TodayScheduleSection extends StatelessWidget {
 }
 
 class _DoseItemTile extends StatelessWidget {
-  const _DoseItemTile({required this.item});
+  const _DoseItemTile({
+    required this.item,
+    this.onMarkTakenTap,
+    this.onRescheduleTap,
+  });
 
   final HomeDoseItem item;
+  final VoidCallback? onMarkTakenTap;
+  final VoidCallback? onRescheduleTap;
 
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
-    final (bgColor, iconColor, chipColor, chipText) = _statusTokens(item.status);
+    final (bgColor, iconColor, statusText, statusColor, detailText) = _statusTokens(item.status);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: VitalisColors.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF2D333A).withValues(alpha: 0.06),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-          child: Row(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Column(
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: bgColor,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                alignment: Alignment.center,
-                child: Icon(item.icon, size: 22, color: iconColor),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.name,
-                      style: text.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      item.dosageLabel,
-                      style: text.bodySmall?.copyWith(color: VitalisColors.onSurfaceVariant),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+              Row(
                 children: [
-                  Text(
-                    item.timeLabel,
-                    style: text.labelMedium?.copyWith(
-                      color: VitalisColors.onSurface,
-                      fontWeight: FontWeight.w600,
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: bgColor,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(item.icon, size: 18, color: iconColor),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.name,
+                          style: text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          item.dosageLabel,
+                          style: text.bodySmall?.copyWith(color: VitalisColors.onSurfaceVariant),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 5),
-                  _StatusChip(color: chipColor, label: chipText),
+                  const SizedBox(width: 8),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        statusText,
+                        style: text.labelMedium?.copyWith(
+                          color: statusColor,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      Text(
+                        detailText,
+                        style: text.labelSmall?.copyWith(color: VitalisColors.neutral),
+                      ),
+                    ],
+                  ),
                 ],
               ),
+              const SizedBox(height: 12),
+              _buildAction(context, item.status),
             ],
           ),
         ),
@@ -128,53 +163,70 @@ class _DoseItemTile extends StatelessWidget {
     );
   }
 
-  (Color bg, Color icon, Color chip, String label) _statusTokens(HomeDoseStatus status) {
+  Widget _buildAction(BuildContext context, HomeDoseStatus status) {
+    switch (status) {
+      case HomeDoseStatus.taken:
+        return SizedBox(
+          width: double.infinity,
+          child: FilledButton.tonal(
+            onPressed: null,
+            child: const Text('Already Recorded'),
+          ),
+        );
+      case HomeDoseStatus.upcoming:
+        return SizedBox(
+          width: double.infinity,
+          child: FilledButton(
+            onPressed: onMarkTakenTap,
+            child: const Text('Mark as Taken'),
+          ),
+        );
+      case HomeDoseStatus.missed:
+        return Row(
+          children: [
+            Expanded(
+              child: FilledButton.tonal(
+                onPressed: onRescheduleTap,
+                child: const Text('Reschedule'),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: FilledButton.tonal(
+                onPressed: onMarkTakenTap,
+                child: const Text('Mark Taken'),
+              ),
+            ),
+          ],
+        );
+    }
+  }
+
+  (Color bg, Color icon, String status, Color statusColor, String detail) _statusTokens(
+    HomeDoseStatus status,
+  ) {
     return switch (status) {
       HomeDoseStatus.taken => (
-          VitalisColors.statusSuccessSoft,
+          const Color(0xFFE7F5EB),
           VitalisColors.statusSuccess,
+          'TAKEN',
           VitalisColors.statusSuccess,
-          'Đã uống',
+          item.timeLabel,
         ),
       HomeDoseStatus.missed => (
-          VitalisColors.statusErrorSoft,
+          const Color(0xFFFCEAEA),
           VitalisColors.statusError,
+          'MISSED',
           VitalisColors.statusError,
-          'Bỏ lỡ',
+          'Hôm qua',
         ),
       HomeDoseStatus.upcoming => (
-          VitalisColors.surfaceContainerLow,
-          VitalisColors.statusUpcomingIcon,
-          VitalisColors.neutral,
-          'Sắp tới',
+          const Color(0xFFE7F0FD),
+          VitalisColors.primary,
+          'UPCOMING',
+          VitalisColors.primary,
+          item.timeLabel,
         ),
     };
-  }
-}
-
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.color, required this.label});
-
-  final Color color;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: text.labelSmall?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
   }
 }

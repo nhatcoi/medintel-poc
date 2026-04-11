@@ -2,11 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/auth/data/auth_notifier.dart';
-import '../features/auth/welcome_page.dart';
+import '../features/auth/getting_started_page.dart';
 import '../features/auth/patient_setup_page.dart';
 import '../features/caregiver/caregiver_dashboard_page.dart';
-import '../features/medication/medication_placeholder.dart';
-import '../features/reminder/reminder_placeholder.dart';
+import '../features/medication/medication_page.dart';
+import '../features/reminder/reminder_page.dart';
 import '../features/settings/settings_page.dart';
 import '../features/shell/branch_pages.dart';
 import '../providers/providers.dart';
@@ -29,7 +29,7 @@ GoRouter createMedIntelRouter(WidgetRef ref) {
       GoRoute(
         path: '/welcome',
         name: 'welcome',
-        builder: (context, state) => const WelcomePage(),
+        builder: (context, state) => const GettingStartedPage(),
       ),
       GoRoute(
         path: '/setup',
@@ -100,12 +100,12 @@ GoRouter createMedIntelRouter(WidgetRef ref) {
       GoRoute(
         path: '/medication',
         name: 'medication',
-        builder: (context, state) => const MedicationPlaceholder(),
+        builder: (context, state) => const MedicationPage(),
       ),
       GoRoute(
         path: '/reminder',
         name: 'reminder',
-        builder: (context, state) => const ReminderPlaceholder(),
+        builder: (context, state) => const ReminderPage(),
       ),
     ],
   );

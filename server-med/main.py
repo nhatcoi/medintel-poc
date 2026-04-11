@@ -6,6 +6,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.utils import get_openapi
+from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -65,12 +67,58 @@ async def lifespan(app: FastAPI):
     yield
 
 
+_OPENAPI_TAGS = [
+    {"name": "health", "description": "Kiểm tra sống"},
+    {"name": "auth", "description": "Thiết lập thiết bị / profile (JWT)"},
+    {"name": "profiles", "description": "Hồ sơ người dùng"},
+    {"name": "chat", "description": "Chat agentic"},
+    {"name": "agent", "description": "Registry & validate tool_calls"},
+    {"name": "treatment", "description": "Thuốc, lịch uống, log tuân thủ"},
+    {"name": "ocr", "description": "Trích xuất ảnh (LLM vision)"},
+    {"name": "scan", "description": "Quét đơn thuốc + lưu DB"},
+    {"name": "rag", "description": "Tìm kiếm RAG thuốc"},
+    {"name": "medical-records", "description": "Hồ sơ bệnh án"},
+    {"name": "habits", "description": "Thói quen sức khỏe"},
+    {"name": "care", "description": "Caregiver & nhóm chăm sóc"},
+    {"name": "notifications", "description": "Thông báo"},
+    {"name": "memory", "description": "Bộ nhớ dài hạn bệnh nhân (KV)"},
+    {"name": "reports", "description": "Báo cáo tuân thủ"},
+]
+
+_docs_on = settings.docs_enabled
 app = FastAPI(
     title="MedIntel API",
-    description="Backend tuân thủ điều trị — FastAPI + PostgreSQL/SQLite",
+    description=(
+        "Backend tuân thủ điều trị — FastAPI + PostgreSQL/SQLite.\n\n"
+        "**Swagger UI:** [`/docs`](/docs) · **ReDoc:** [`/redoc`](/redoc) · **OpenAPI JSON:** [`/openapi.json`](/openapi.json)"
+    ),
     version="0.1.0",
     lifespan=lifespan,
+    openapi_tags=_OPENAPI_TAGS,
+    docs_url="/docs" if _docs_on else None,
+    redoc_url="/redoc" if _docs_on else None,
+    openapi_url="/openapi.json" if _docs_on else None,
 )
+
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+        tags=_OPENAPI_TAGS,
+    )
+    base = settings.openapi_public_url.rstrip("/")
+    schema["servers"] = [{"url": base, "description": "Môi trường hiện tại"}]
+    app.openapi_schema = schema
+    return app.openapi_schema
+
+
+if _docs_on:
+    app.openapi = custom_openapi  # type: ignore[method-assign]
 
 app.add_middleware(
     CORSMiddleware,
@@ -82,6 +130,14 @@ app.add_middleware(
 app.add_middleware(HttpLoggingMiddleware)
 
 app.include_router(api_router, prefix="/api/v1")
+
+
+@app.get("/", include_in_schema=False)
+def root():
+    """Vào trang chủ → chuyển tới Swagger."""
+    if _docs_on:
+        return RedirectResponse(url="/docs", status_code=307)
+    return {"service": "medintel-api", "docs": "disabled"}
 
 
 @app.get("/health")

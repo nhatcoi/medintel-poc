@@ -47,25 +47,7 @@ class HomeEmptyState extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: () => context.goNamed('scan'),
-                      icon: const Icon(Icons.document_scanner_outlined, size: 20),
-                      label: const Text('Quét đơn'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => context.goNamed('ai'),
-                      icon: const Icon(Icons.smart_toy_outlined, size: 20),
-                      label: const Text('AI Chat'),
-                    ),
-                  ),
-                ],
-              ),
+         
             ],
           ),
         ),

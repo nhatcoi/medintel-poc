@@ -50,5 +50,10 @@ class Settings(BaseSettings):
     http_log_bodies: bool = False
     http_log_body_max_chars: int = 2048
 
+    # Swagger UI: /docs , OpenAPI JSON: /openapi.json
+    docs_enabled: bool = True
+    # Base URL hiển thị trong OpenAPI (Try it out) — đổi khi deploy hoặc dùng tunnel
+    openapi_public_url: str = "http://localhost:8000"
+
 
 settings = Settings()

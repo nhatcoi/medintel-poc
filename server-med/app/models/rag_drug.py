@@ -5,16 +5,18 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 
+import os
+
 from sqlalchemy import (
     Column,
     DateTime,
     ForeignKey,
     Index,
     Integer,
+    JSON,
     Text,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
 from database.session import Base, GUID
@@ -23,6 +25,10 @@ try:
     from pgvector.sqlalchemy import Vector
 except ImportError:  # pgvector chưa cài — model vẫn import được, chỉ thiếu cột embedding
     Vector = None
+
+# SQLite: JSON + Text embedding; PostgreSQL: JSON + Vector khi có pgvector
+_DB_URL = os.environ.get("DATABASE_URL", "").lower()
+_USE_PG_VECTOR = "postgresql" in _DB_URL or "postgres" in _DB_URL
 
 
 def _utcnow() -> datetime:
@@ -42,7 +48,7 @@ class TbdfDrug(Base):
     dosage_form = Column(Text, nullable=True)
     ingredient_short = Column(Text, nullable=True)
     category = Column(Text, nullable=True)
-    raw_document = Column(JSONB, nullable=False)
+    raw_document = Column(JSON, nullable=False)
     normalized_text = Column(Text, nullable=True)
     text_sha256 = Column(Text, nullable=True)
     crawled_at = Column(DateTime(timezone=True), nullable=False, default=_utcnow)
@@ -66,7 +72,11 @@ class TbdfDrugChunk(Base):
     content = Column(Text, nullable=False)
     token_estimate = Column(Integer, nullable=True)
     embedding_model = Column(Text, nullable=False, default="paraphrase-multilingual-MiniLM-L12-v2")
-    embedding = Column(Vector(384)) if Vector else Column(Text, nullable=True)
+    embedding = (
+        Column(Vector(384))
+        if (_USE_PG_VECTOR and Vector is not None)
+        else Column(Text, nullable=True)
+    )
     created_at = Column(DateTime(timezone=True), nullable=False, default=_utcnow)
 
     drug = relationship("TbdfDrug", back_populates="chunks")
