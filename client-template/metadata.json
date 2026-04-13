@@ -1,7 +1,0 @@
-{
-  "name": "MedIntel - Patient Profiling",
-  "description": "A comprehensive healthcare registration and patient profiling flow designed to personalize medication adherence and treatment tracking through AI-driven insights.",
-  "requestFramePermissions": [
-    "camera"
-  ]
-}
