@@ -93,3 +93,5 @@ data-med/pgdata/
 # Tài liệu / Office temp
 ~$*
 *.tmp
+
+medintel_orm.dump
