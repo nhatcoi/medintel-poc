@@ -20,6 +20,37 @@ def test_ping(client):
     assert r.json().get("pong") is True
 
 
+def test_profile_snapshot(client, profile_id):
+    r = client.get(f"/api/v1/profiles/{profile_id}/snapshot")
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["profile"]["profile_id"] == str(profile_id)
+    assert "medication_cabinet" in body
+    assert "medication_logs_recent" in body
+    assert "memories" in body
+    assert "adherence_summary" in body
+    assert body["adherence_summary"]["profile_id"] == str(profile_id)
+
+
+def test_profile_agent_context_refresh_and_get(client, profile_id):
+    r0 = client.get(f"/api/v1/profiles/{profile_id}/agent-context")
+    # device-setup đã auto-làm mới agent context
+    assert r0.status_code == 200, r0.text
+    assert "Ngữ cảnh agent" in r0.json()["content_markdown"]
+
+    r1 = client.post(f"/api/v1/profiles/{profile_id}/agent-context/refresh")
+    assert r1.status_code == 200, r1.text
+    data = r1.json()
+    assert data["profile_id"] == str(profile_id)
+    assert "Ngữ cảnh agent" in data["content_markdown"]
+    assert data["char_count"] > 20
+    assert data["source"] == "snapshot_derived"
+
+    r2 = client.get(f"/api/v1/profiles/{profile_id}/agent-context")
+    assert r2.status_code == 200, r2.text
+    assert r2.json()["char_count"] == data["char_count"]
+
+
 def test_profile_get_patch(client, profile_id):
     r = client.get(f"/api/v1/profiles/{profile_id}")
     assert r.status_code == 200
@@ -224,3 +255,27 @@ def test_agent_tools_list(client):
     body = r.json()
     assert "tools" in body
     assert len(body["tools"]) >= 1
+
+
+def test_chat_welcome_hints(client, profile_id):
+    r = client.get(
+        "/api/v1/chat/welcome-hints",
+        params={"profile_id": str(profile_id)},
+    )
+    assert r.status_code == 200, r.text
+    data = r.json()
+    assert isinstance(data.get("hints"), list)
+    assert len(data["hints"]) >= 1
+    assert data.get("source") in ("llm", "template")
+
+
+def test_chat_suggested_questions(client, profile_id):
+    r = client.get(
+        "/api/v1/chat/suggested-questions",
+        params={"profile_id": str(profile_id)},
+    )
+    assert r.status_code == 200, r.text
+    data = r.json()
+    assert isinstance(data.get("questions"), list)
+    assert len(data["questions"]) >= 1
+    assert data.get("source") in ("llm", "template")

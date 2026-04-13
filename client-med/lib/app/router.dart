@@ -18,11 +18,9 @@ GoRouter createMedIntelRouter(WidgetRef ref) {
     redirect: (context, state) {
       final auth = ref.read(authProvider);
       final loc = state.matchedLocation;
-      final isOnboarding = loc == '/welcome' || loc == '/setup';
-
       if (auth.status == OnboardStatus.unknown) return null;
-      if (auth.status == OnboardStatus.firstTime && !isOnboarding) return '/welcome';
-      if (auth.status == OnboardStatus.completed && isOnboarding) return '/home';
+      if (auth.status == OnboardStatus.firstTime && loc != '/welcome') return '/welcome';
+      if (auth.status == OnboardStatus.completed && loc == '/welcome') return '/home';
       return null;
     },
     routes: [

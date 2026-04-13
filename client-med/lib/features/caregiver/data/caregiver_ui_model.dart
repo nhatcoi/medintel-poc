@@ -24,12 +24,15 @@ class CareAlertItem {
     required this.title,
     required this.subtitle,
     this.actionLabel,
+    this.opensAiChat = false,
   });
 
   final bool isUrgent;
   final String title;
   final String subtitle;
   final String? actionLabel;
+  /// true → mở tab AI Chat (không so khớp chuỗi đã dịch).
+  final bool opensAiChat;
 }
 
 @immutable

@@ -9,6 +9,7 @@ from sqlalchemy import select
 
 from app.api.deps import DbSession
 from app.models.medical import DiseaseCategory, MedicalRecord
+from app.services.patient_agent_context_service import refresh_patient_agent_context_best_effort
 from app.schemas.medical_records import (
     DiseaseCategoryCreate,
     DiseaseCategoryRead,
@@ -84,6 +85,7 @@ def create_record(body: MedicalRecordCreate, db: DbSession):
     db.add(rec)
     db.commit()
     db.refresh(rec)
+    refresh_patient_agent_context_best_effort(db, rec.profile_id)
     return MedicalRecordRead(
         record_id=rec.id,
         profile_id=rec.profile_id,
@@ -126,6 +128,7 @@ def update_record(record_id: uuid.UUID, body: MedicalRecordUpdate, db: DbSession
         setattr(rec, field, val)
     db.commit()
     db.refresh(rec)
+    refresh_patient_agent_context_best_effort(db, rec.profile_id)
     return MedicalRecordRead(
         record_id=rec.id,
         profile_id=rec.profile_id,
@@ -145,5 +148,7 @@ def delete_record(record_id: uuid.UUID, db: DbSession):
     rec = db.get(MedicalRecord, record_id)
     if not rec:
         raise HTTPException(404, "Không tìm thấy hồ sơ bệnh án")
+    pid = rec.profile_id
     db.delete(rec)
     db.commit()
+    refresh_patient_agent_context_best_effort(db, pid)

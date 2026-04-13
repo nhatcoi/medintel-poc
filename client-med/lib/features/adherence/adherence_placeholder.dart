@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:med_intel_client/l10n/app_localizations.dart';
 
 import '../../providers/providers.dart';
 import '../treatment/data/treatment_provider.dart';
@@ -26,10 +27,11 @@ class _AdherencePlaceholderState extends ConsumerState<AdherencePlaceholder> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final state = ref.watch(treatmentProvider);
     final summary = state.summary;
     return Scaffold(
-      appBar: AppBar(title: const Text('Tuân thủ điều trị')),
+      appBar: AppBar(title: Text(l10n.adherenceTitle)),
       body: RefreshIndicator(
         onRefresh: _reload,
         child: ListView(
@@ -38,13 +40,13 @@ class _AdherencePlaceholderState extends ConsumerState<AdherencePlaceholder> {
             if (summary == null) ...[
               if (state.loading) const LinearProgressIndicator(),
               const SizedBox(height: 16),
-              const Text('Chưa có dữ liệu tuân thủ.'),
+              Text(l10n.adherenceNoData),
             ] else ...[
-              _tile(context, 'Tổng liều (${summary.days} ngày)', summary.total.toString()),
-              _tile(context, 'Đã uống', summary.taken.toString()),
-              _tile(context, 'Bỏ lỡ', summary.missed.toString()),
-              _tile(context, 'Bỏ qua', summary.skipped.toString()),
-              _tile(context, 'Uống trễ', summary.late.toString()),
+              _tile(context, l10n.adherenceTotalDoses(summary.days), summary.total.toString()),
+              _tile(context, l10n.adherenceTakenLabel, summary.taken.toString()),
+              _tile(context, l10n.adherenceMissedLabel, summary.missed.toString()),
+              _tile(context, l10n.adherenceSkippedLabel, summary.skipped.toString()),
+              _tile(context, l10n.adherenceLateLabel, summary.late.toString()),
             ],
           ],
         ),

@@ -55,7 +55,7 @@ async def scan_prescription(
     if not (settings.llm_api_key or "").strip():
         raise HTTPException(
             status_code=503,
-            detail="Chưa cấu hình LLM_API_KEY trong .env (server-med). Thêm key rồi khởi động lại uvicorn.",
+            detail="Chưa cấu hình LLM_API_KEY hoặc GROQ_API_KEY trong .env (server-med). Thêm key rồi khởi động lại uvicorn.",
         )
 
     uid = _resolve_user_id(user_id)

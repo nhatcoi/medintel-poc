@@ -70,7 +70,7 @@ class LocalMedintelStore {
             'skipped' => 'bỏ qua',
             _ => 'đã uống',
           };
-          summaries.add('Đã lưu cục bộ: $name — $vn');
+          summaries.add('Đã lưu vào database: $name — $vn');
           break;
 
         case 'upsert_medication':
@@ -91,7 +91,7 @@ class LocalMedintelStore {
           } else {
             meds = [...meds, row];
           }
-          summaries.add('Đã lưu thuốc cục bộ: $name');
+          summaries.add('Đã lưu thuốc vào database: $name');
           break;
 
         case 'append_care_note':
@@ -105,7 +105,7 @@ class LocalMedintelStore {
               atIso: DateTime.now().toUtc().toIso8601String(),
             ),
           ];
-          summaries.add('Đã lưu ghi chú chăm sóc (cục bộ)');
+          summaries.add('Đã lưu ghi chú chăm sóc vào database');
           break;
 
         case 'save_reminder_intent':

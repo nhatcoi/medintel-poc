@@ -14,6 +14,10 @@ from app.models.profile import Profile
 from app.models.treatment_medication import Medication, MedicationLog, MedicationSchedule
 from app.repositories.medication_repository import list_medications_for_profile
 from app.repositories.profile_repository import get_by_id
+from app.services.patient_agent_context_service import (
+    profile_id_for_medication,
+    refresh_patient_agent_context_best_effort,
+)
 from app.schemas.treatment import (
     AdherenceSummaryResponse,
     MedicationCreateRequest,
@@ -92,6 +96,7 @@ def _ensure_profile_exists(db: DbSession, profile_id: uuid.UUID) -> Profile:
     db.add(profile)
     db.commit()
     db.refresh(profile)
+    refresh_patient_agent_context_best_effort(db, profile_id)
     return profile
 
 
@@ -162,6 +167,7 @@ def create_medication(
         )
     db.commit()
     db.refresh(med)
+    refresh_patient_agent_context_best_effort(db, body.profile_id)
 
     slots = [MedicationScheduleSlot(scheduled_time=f"{t.hour:02d}:{t.minute:02d}") for t in sorted(
         [s.scheduled_time for s in med.schedules], key=lambda x: (x.hour, x.minute)
@@ -216,6 +222,9 @@ def update_medication(
             )
     db.commit()
     db.refresh(med)
+    refresh_patient_agent_context_best_effort(
+        db, profile_id_for_medication(db, medication_id)
+    )
 
     slots = [MedicationScheduleSlot(scheduled_time=f"{t.hour:02d}:{t.minute:02d}") for t in sorted(
         [s.scheduled_time for s in med.schedules], key=lambda x: (x.hour, x.minute)
@@ -271,6 +280,7 @@ def create_medication_log(
     db.add(log)
     db.commit()
     db.refresh(log)
+    refresh_patient_agent_context_best_effort(db, body.profile_id)
 
     return MedicationLogItem(
         log_id=log.id,

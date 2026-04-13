@@ -1,6 +1,8 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:med_intel_client/l10n/app_localizations.dart';
 
-/// Nhắc uống thuốc cục bộ — triển khai đầy đủ schedule theo [MedicationSchedules] sau.
+/// Nhắc uống thuốc trên thiết bị (theo lịch đồng bộ database) — triển khai đầy đủ schedule theo [MedicationSchedules] sau.
 final class NotificationService {
   NotificationService._();
 
@@ -22,10 +24,11 @@ final class NotificationService {
     required String title,
     required String body,
   }) async {
-    const android = AndroidNotificationDetails(
+    final l10n = lookupAppLocalizations(const Locale('vi'));
+    final android = AndroidNotificationDetails(
       'medintel_medication',
-      'Nhắc uống thuốc',
-      channelDescription: 'Thông báo nhắc uống thuốc hằng ngày',
+      l10n.notificationChannelName,
+      channelDescription: l10n.notificationChannelDescription,
       importance: Importance.max,
       priority: Priority.high,
     );
@@ -34,7 +37,7 @@ final class NotificationService {
       id,
       title,
       body,
-      const NotificationDetails(android: android, iOS: ios),
+      NotificationDetails(android: android, iOS: ios),
     );
   }
 }

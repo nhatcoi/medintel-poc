@@ -20,7 +20,7 @@ SERVER_SIDE_TOOLS: Final[frozenset[str]] = frozenset({"update_patient_memory"})
 # Mô tả ngắn cho OpenAPI / tài liệu nội bộ
 TOOL_DESCRIPTIONS: dict[str, str] = {
     "log_dose": "Ghi nhận một liều (taken/missed/skipped); app hoặc server sync lưu log.",
-    "upsert_medication": "Thêm/cập nhật một dòng thuốc trong danh sách (thường cục bộ).",
+    "upsert_medication": "Thêm/cập nhật một dòng thuốc trong danh sách (lưu database / đồng bộ).",
     "append_care_note": "Ghi chú nhanh vào nhật ký chăm sóc.",
     "save_reminder_intent": "Lưu ý định nhắc (nháp); báo thức thật do app xử lý.",
     "update_patient_memory": (

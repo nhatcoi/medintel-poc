@@ -1,0 +1,356 @@
+{
+  "info": {
+    "name": "MedIntel server-med-up API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Profile + Treatment APIs for server-med-up"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000"
+    },
+    {
+      "key": "profile_id",
+      "value": ""
+    },
+    {
+      "key": "period_id",
+      "value": ""
+    },
+    {
+      "key": "medication_id",
+      "value": ""
+    },
+    {
+      "key": "schedule_id",
+      "value": ""
+    },
+    {
+      "key": "log_id",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Profile API",
+      "item": [
+        {
+          "name": "Create Onboarding Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Nhật Nhật\",\n  \"date_of_birth\": \"1998-07-20\",\n  \"email\": \"nhat@example.com\",\n  \"phone_number\": \"0901234567\",\n  \"emergency_contact\": \"0907654321\",\n  \"role\": \"patient\",\n  \"chronic_conditions\": [\n    \"Tăng huyết áp\"\n  ],\n  \"allergies\": [\n    \"Penicillin\"\n  ],\n  \"current_medications\": [\n    \"Amlodipine 5mg\"\n  ],\n  \"primary_diagnosis\": \"Tăng huyết áp\",\n  \"treatment_status\": \"active\",\n  \"medical_notes\": \"Đôi khi chóng mặt buổi sáng\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/profiles/onboarding"
+            }
+          }
+        },
+        {
+          "name": "Update Onboarding Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Nhật Nhật Nguyễn\",\n  \"chronic_conditions\": [\n    \"Tăng huyết áp\",\n    \"Đái tháo đường type 2\"\n  ],\n  \"current_medications\": [\n    \"Amlodipine 5mg\",\n    \"Metformin 500mg\"\n  ],\n  \"medical_notes\": \"Ngủ kém nếu dùng cà phê muộn\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/profiles/{{profile_id}}/onboarding"
+            }
+          }
+        },
+        {
+          "name": "Get Profile By ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/profiles/{{profile_id}}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Treatment Medication API",
+      "item": [
+        {
+          "name": "Search Medications",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/treatment/medications/search?q=amlodipine&limit=20"
+            }
+          }
+        },
+        {
+          "name": "List Medications By Profile",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/treatment/medications?profile_id={{profile_id}}"
+            }
+          }
+        },
+        {
+          "name": "Create Medication",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"profile_id\": \"{{profile_id}}\",\n  \"period_id\": \"\",\n  \"medication_name\": \"Amlodipine 5mg\",\n  \"dosage\": \"1 viên\",\n  \"frequency\": \"1 lần/ngày\",\n  \"instructions\": \"Uống sau ăn\",\n  \"start_date\": \"2026-01-01\",\n  \"end_date\": null,\n  \"notes\": \"Đo huyết áp trước khi uống\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/treatment/medications"
+            }
+          }
+        },
+        {
+          "name": "Update Medication",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dosage\": \"2 viên\",\n  \"frequency\": \"2 lần/ngày\",\n  \"instructions\": \"Uống sau ăn sáng và tối\",\n  \"status\": \"active\",\n  \"notes\": \"Theo dõi huyết áp mỗi buổi sáng\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/treatment/medications/{{medication_id}}"
+            }
+          }
+        },
+        {
+          "name": "Delete Medication (Soft Delete)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/api/v1/treatment/medications/{{medication_id}}"
+            }
+          }
+        },
+        {
+          "name": "List Schedules By Medication",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/treatment/medications/{{medication_id}}/schedules"
+            },
+            "header": []
+          }
+        },
+        {
+          "name": "Create Schedule",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/v1/treatment/medications/{{medication_id}}/schedules"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduled_time\": \"08:00:00\",\n  \"repeat_pattern\": \"daily\",\n  \"repeat_days\": \"mon,tue,wed,thu,fri,sat,sun\",\n  \"reminder_enabled\": true,\n  \"reminder_time_before\": 15,\n  \"status\": \"active\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Update Schedule",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{base_url}}/api/v1/treatment/medications/{{medication_id}}/schedules/{{schedule_id}}"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduled_time\": \"09:00:00\",\n  \"reminder_enabled\": true,\n  \"reminder_time_before\": 10,\n  \"status\": \"active\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Delete Schedule",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/api/v1/treatment/medications/{{medication_id}}/schedules/{{schedule_id}}"
+            },
+            "header": []
+          }
+        },
+        {
+          "name": "List Logs By Medication",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/treatment/medications/{{medication_id}}/logs"
+            },
+            "header": []
+          }
+        },
+        {
+          "name": "Create Log",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/v1/treatment/medications/{{medication_id}}/logs"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"schedule_id\": \"{{schedule_id}}\",\n  \"profile_id\": \"{{profile_id}}\",\n  \"status\": \"taken\",\n  \"scheduled_datetime\": \"2026-04-13T08:00:00+00:00\",\n  \"actual_datetime\": \"2026-04-13T08:20:00+00:00\",\n  \"notes\": \"Đã uống sau ăn\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Update Log",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{base_url}}/api/v1/treatment/medications/{{medication_id}}/logs/{{log_id}}"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"taken\",\n  \"actual_datetime\": \"2026-04-13T08:45:00+00:00\",\n  \"notes\": \"Cập nhật giờ uống thực tế\"\n}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Delete Log",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{base_url}}/api/v1/treatment/medications/{{medication_id}}/logs/{{log_id}}"
+            },
+            "header": []
+          }
+        },
+        {
+          "name": "Adherence Summary 7 Days",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/treatment/adherence/summary?profile_id={{profile_id}}&days=7"
+            },
+            "header": []
+          }
+        },
+        {
+          "name": "Adherence Summary 30 Days",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/treatment/adherence/summary?profile_id={{profile_id}}&days=30"
+            },
+            "header": []
+          }
+        },
+        {
+          "name": "Next Dose",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/treatment/next-dose?profile_id={{profile_id}}"
+            },
+            "header": []
+          }
+        },
+        {
+          "name": "Missed Dose Check",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/treatment/missed-dose-check?profile_id={{profile_id}}&grace_minutes=60"
+            },
+            "header": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth Phone Session API",
+      "item": [
+        {
+          "name": "Register Phone",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Nhật Nhật\",\n  \"phone_number\": \"0901234567\",\n  \"password\": \"123456\",\n  \"role\": \"patient\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/register-phone"
+            }
+          }
+        },
+        {
+          "name": "Login Phone",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone_number\": \"0901234567\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/login-phone"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, status
 
 from app.api.deps import DbSession
 from app.models.profile import Profile
+from app.services.patient_agent_context_service import refresh_patient_agent_context_best_effort
 from app.repositories.profile_repository import get_by_email
 from app.schemas.user import DeviceSetup, SyncRequest, TokenResponse, UserRead
 from app.services.auth_service import create_access_token
@@ -13,7 +14,7 @@ router = APIRouter()
 
 @router.post("/device-setup", response_model=TokenResponse)
 def device_setup(body: DeviceSetup, db: DbSession):
-    """Thiết lập thiết bị: tạo profile cục bộ/sync (không mật khẩu IAM)."""
+    """Thiết lập thiết bị: tạo profile và đồng bộ database (không mật khẩu IAM)."""
     profile = Profile(
         full_name=body.full_name,
         role="patient",
@@ -22,6 +23,7 @@ def device_setup(body: DeviceSetup, db: DbSession):
     db.add(profile)
     db.commit()
     db.refresh(profile)
+    refresh_patient_agent_context_best_effort(db, profile.id)
     token = create_access_token(str(profile.id))
     return TokenResponse(
         access_token=token,

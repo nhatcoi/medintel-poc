@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:med_intel_client/l10n/app_localizations.dart';
 
 import '../../../core/theme/vitalis_colors.dart';
 
@@ -17,6 +18,7 @@ class PatientMonitoringHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final text = Theme.of(context).textTheme;
 
     return Padding(
@@ -25,7 +27,7 @@ class PatientMonitoringHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'MONITORING',
+            l10n.careMonitoringLabel,
             style: text.labelMedium?.copyWith(
               letterSpacing: 1.2,
               color: VitalisColors.neutral,

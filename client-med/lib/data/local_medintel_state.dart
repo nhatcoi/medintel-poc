@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-/// Snapshot dữ liệu agent lưu cục bộ (SharedPreferences). Đồng bộ server — sau.
+/// Snapshot dữ liệu agent đồng bộ database (cache SharedPreferences trên thiết bị).
 class LocalMedintelState {
   const LocalMedintelState({
     this.medications = const [],

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 
 import '../core/constants/app_constants.dart';
+import '../core/constants/api_paths.dart';
 import 'api_service.dart';
 
 final class OcrService {
@@ -23,7 +24,7 @@ final class OcrService {
     final formData = FormData.fromMap(fields);
 
     final resp = await _api.client.post<Map<String, dynamic>>(
-      '/api/v1/scan/prescription',
+      ApiPaths.scanPrescription,
       data: formData,
       options: Options(receiveTimeout: const Duration(seconds: 90)),
     );
@@ -52,14 +53,19 @@ class ScanResult {
   final List<SavedMedicationRef> savedMedications;
 
   factory ScanResult.fromJson(Map<String, dynamic> json) {
+    final medsRaw = json['medications'] as List<dynamic>? ?? [];
+    final meds = medsRaw
+        .whereType<Map>()
+        .map((e) => ScannedMedication.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
     return ScanResult(
-      doctorName: json['doctor_name'] as String?,
-      issuedDate: json['issued_date'] as String?,
+      doctorName:
+          json['doctor_name'] as String? ?? json['prescribing_doctor'] as String?,
+      issuedDate:
+          json['issued_date'] as String? ?? json['prescription_date'] as String?,
       patientName: json['patient_name'] as String?,
       rawText: json['raw_text'] as String?,
-      medications: (json['medications'] as List<dynamic>? ?? [])
-          .map((e) => ScannedMedication.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      medications: meds,
       prescriptionId: json['prescription_id'] as String?,
       savedMedications: (json['saved_medications'] as List<dynamic>? ?? [])
           .map((e) => SavedMedicationRef.fromJson(e as Map<String, dynamic>))
@@ -98,14 +104,15 @@ class ScannedMedication {
   final List<String> times;
 
   factory ScannedMedication.fromJson(Map<String, dynamic> json) {
+    final timesRaw = json['times'] as List<dynamic>? ?? [];
     return ScannedMedication(
-      name: json['name'] as String? ?? 'Unknown',
+      name: json['name'] as String? ??
+          json['medication_name'] as String? ??
+          'Unknown',
       dosage: json['dosage'] as String?,
       frequency: json['frequency'] as String?,
       instructions: json['instructions'] as String?,
-      times: (json['times'] as List<dynamic>? ?? [])
-          .map((e) => e.toString())
-          .toList(),
+      times: timesRaw.map((e) => e.toString()).toList(),
     );
   }
 }

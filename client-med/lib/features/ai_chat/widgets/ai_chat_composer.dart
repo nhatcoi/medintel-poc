@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:med_intel_client/l10n/app_localizations.dart';
 
 import '../../../core/theme/vitalis_colors.dart';
 
@@ -90,7 +91,7 @@ class _AiChatComposerState extends State<AiChatComposer> {
                         color: VitalisColors.onSurface,
                       ),
                   decoration: InputDecoration(
-                    hintText: 'Hỏi MedIntel bất cứ điều gì…',
+                    hintText: AppLocalizations.of(context).aiComposerHint,
                     hintStyle: TextStyle(
                       color: VitalisColors.outlineVariantBase.withValues(alpha: 0.65),
                     ),

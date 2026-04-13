@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:med_intel_client/l10n/app_localizations.dart';
 
 import '../../../core/theme/vitalis_colors.dart';
 import '../../../services/ocr_service.dart';
@@ -10,6 +11,7 @@ class ScanResultView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final text = Theme.of(context).textTheme;
     final meds = result.medications;
 
@@ -34,7 +36,7 @@ class ScanResultView extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             Text(
-              'Kết quả phân tích',
+              l10n.scanResultTitle,
               style: text.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
                 color: VitalisColors.onSurface,
@@ -45,7 +47,7 @@ class ScanResultView extends StatelessWidget {
         if (result.prescriptionId != null) ...[
           const SizedBox(height: 10),
           Text(
-            'Đã lưu đơn thuốc (${result.savedMedications.length} thuốc)',
+            l10n.scanResultSaved(result.savedMedications.length),
             style: text.labelLarge?.copyWith(
               color: VitalisColors.primary,
               fontWeight: FontWeight.w600,
@@ -70,14 +72,14 @@ class ScanResultView extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (result.doctorName != null)
-                  _InfoRow(icon: Icons.person_outline, label: 'Bác sĩ', value: result.doctorName!),
+                  _InfoRow(icon: Icons.person_outline, label: l10n.scanLabelDoctor, value: result.doctorName!),
                 if (result.patientName != null) ...[
                   if (result.doctorName != null) const SizedBox(height: 6),
-                  _InfoRow(icon: Icons.badge_outlined, label: 'Bệnh nhân', value: result.patientName!),
+                  _InfoRow(icon: Icons.badge_outlined, label: l10n.scanLabelPatient, value: result.patientName!),
                 ],
                 if (result.issuedDate != null) ...[
                   const SizedBox(height: 6),
-                  _InfoRow(icon: Icons.calendar_today_outlined, label: 'Ngày', value: result.issuedDate!),
+                  _InfoRow(icon: Icons.calendar_today_outlined, label: l10n.scanLabelDate, value: result.issuedDate!),
                 ],
               ],
             ),
@@ -87,7 +89,7 @@ class ScanResultView extends StatelessWidget {
         // Medications
         const SizedBox(height: 18),
         Text(
-          'Thuốc (đã nhận diện ${meds.length})',
+          l10n.scanMedsDetected(meds.length),
           style: text.titleSmall?.copyWith(
             fontWeight: FontWeight.w700,
             color: VitalisColors.onSurface,
@@ -101,14 +103,14 @@ class ScanResultView extends StatelessWidget {
               color: const Color(0xFFFFF8E1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.warning_amber_rounded, color: Color(0xFFF9A825), size: 20),
-                SizedBox(width: 10),
+                const Icon(Icons.warning_amber_rounded, color: Color(0xFFF9A825), size: 20),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Không phát hiện thuốc nào. Vui lòng thử chụp lại rõ hơn.',
-                    style: TextStyle(color: Color(0xFF795548), fontSize: 13),
+                    l10n.scanNoMedsFound,
+                    style: const TextStyle(color: Color(0xFF795548), fontSize: 13),
                   ),
                 ),
               ],
@@ -117,7 +119,7 @@ class ScanResultView extends StatelessWidget {
         else
           ...meds.asMap().entries.map((entry) => Padding(
                 padding: EdgeInsets.only(top: entry.key > 0 ? 10 : 0),
-                child: _MedicationCard(med: entry.value, index: entry.key + 1),
+                child: _MedicationCard(med: entry.value, index: entry.key + 1, schedulePrefix: l10n.scanSchedulePrefix),
               )),
       ],
     );
@@ -161,10 +163,15 @@ class _InfoRow extends StatelessWidget {
 }
 
 class _MedicationCard extends StatelessWidget {
-  const _MedicationCard({required this.med, required this.index});
+  const _MedicationCard({
+    required this.med,
+    required this.index,
+    required this.schedulePrefix,
+  });
 
   final ScannedMedication med;
   final int index;
+  final String schedulePrefix;
 
   @override
   Widget build(BuildContext context) {
@@ -251,7 +258,7 @@ class _MedicationCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Lịch uống: ',
+                    schedulePrefix,
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,

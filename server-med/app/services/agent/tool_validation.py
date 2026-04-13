@@ -7,6 +7,9 @@ from typing import Any
 
 from app.services.agent.registry import ALLOWED_TOOLS
 
+_ALLOWED_SUGGEST_CATEGORIES = frozenset({"app", "knowledge", "other"})
+
+
 def normalize_suggested_actions(raw: object, *, max_items: int = 8) -> list[dict[str, str]]:
     """Giữ nguyên số lượng do LLM chọn (tối đa max_items); không đệm chip cứng."""
     if not isinstance(raw, list):
@@ -19,10 +22,14 @@ def normalize_suggested_actions(raw: object, *, max_items: int = 8) -> list[dict
         prompt = str(item.get("prompt") or item.get("query") or item.get("message") or label).strip()
         if not label:
             continue
+        cat = str(item.get("category") or item.get("kind") or "other").strip().lower()
+        if cat not in _ALLOWED_SUGGEST_CATEGORIES:
+            cat = "other"
         out.append(
             {
                 "label": label[:120],
                 "prompt": (prompt or label)[:800],
+                "category": cat,
             }
         )
     return out

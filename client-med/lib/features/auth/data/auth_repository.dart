@@ -1,50 +1,130 @@
 import '../../../services/api_service.dart';
+import '../../../core/constants/api_paths.dart';
 
 class AuthUser {
-  const AuthUser({required this.id, this.email, this.fullName, required this.role});
+  const AuthUser({
+    required this.id,
+    this.email,
+    this.fullName,
+    required this.role,
+    this.phoneNumber,
+  });
+
   final String id;
   final String? email;
   final String? fullName;
   final String role;
+  final String? phoneNumber;
 
   factory AuthUser.fromJson(Map<String, dynamic> json) => AuthUser(
-        id: json['id'] as String,
+        id: (json['profile_id'] ?? json['id'] ?? '').toString(),
         email: json['email'] as String?,
-        fullName: json['full_name'] as String?,
-        role: json['role'] as String? ?? 'patient',
+        fullName: (json['full_name'] ?? json['fullName']) as String?,
+        role: (json['role'] ?? 'patient') as String,
+        phoneNumber: json['phone_number'] as String?,
       );
 }
 
-class AuthResult {
-  const AuthResult({required this.token, required this.user});
-  final String token;
+class SessionAuthResult {
+  const SessionAuthResult({
+    required this.sessionToken,
+    required this.expiresAt,
+    required this.user,
+  });
+
+  final String sessionToken;
+  final String expiresAt;
   final AuthUser user;
 
-  factory AuthResult.fromJson(Map<String, dynamic> json) => AuthResult(
-        token: json['access_token'] as String,
-        user: AuthUser.fromJson(json['user'] as Map<String, dynamic>),
-      );
+  factory SessionAuthResult.fromJson(Map<String, dynamic> json) {
+    final userJson = json['user'] as Map<String, dynamic>? ?? json;
+    return SessionAuthResult(
+      sessionToken: (json['session_token'] ?? '').toString(),
+      expiresAt: (json['expires_at'] ?? '').toString(),
+      user: AuthUser.fromJson(userJson),
+    );
+  }
 }
 
 class AuthRepository {
   AuthRepository(this._api);
   final ApiService _api;
 
-  Future<AuthResult> deviceSetup({
+  Future<SessionAuthResult> registerPhone({
     required String fullName,
-    String? dateOfBirth,
-    String? gender,
-    String? medicalNotes,
+    required String phoneNumber,
+    required String password,
+    String role = 'patient',
   }) async {
     final resp = await _api.client.post<Map<String, dynamic>>(
-      '/api/v1/auth/device-setup',
+      ApiPaths.authRegisterPhone,
       data: {
         'full_name': fullName,
-        'date_of_birth': dateOfBirth,
-        'gender': gender,
-        'medical_notes': medicalNotes,
+        'phone_number': phoneNumber,
+        'password': password,
+        'role': role,
       },
     );
-    return AuthResult.fromJson(resp.data!);
+    return SessionAuthResult.fromJson(resp.data ?? {});
+  }
+
+  Future<SessionAuthResult> loginPhone({
+    required String phoneNumber,
+    required String password,
+  }) async {
+    final resp = await _api.client.post<Map<String, dynamic>>(
+      ApiPaths.authLoginPhone,
+      data: {
+        'phone_number': phoneNumber,
+        'password': password,
+      },
+    );
+    return SessionAuthResult.fromJson(resp.data ?? {});
+  }
+
+  Future<AuthUser> sessionMe(String sessionToken) async {
+    final resp = await _api.client.post<Map<String, dynamic>>(
+      ApiPaths.authSessionMe,
+      data: {'session_token': sessionToken},
+    );
+    return AuthUser.fromJson(resp.data ?? {});
+  }
+
+  Future<void> logoutPhone(String sessionToken) async {
+    await _api.client.post(
+      ApiPaths.authLogoutPhone,
+      data: {'session_token': sessionToken},
+    );
+  }
+
+  Future<void> updateOnboardingProfile({
+    required String profileId,
+    String? fullName,
+    String? dateOfBirth,
+    String? phoneNumber,
+    String? email,
+    List<String>? chronicConditions,
+    List<String>? allergies,
+    List<String>? currentMedications,
+    String? primaryDiagnosis,
+    String? treatmentStatus,
+    String? medicalNotes,
+  }) async {
+    final payload = <String, dynamic>{};
+    if (fullName != null) payload['full_name'] = fullName;
+    if (dateOfBirth != null) payload['date_of_birth'] = dateOfBirth;
+    if (phoneNumber != null) payload['phone_number'] = phoneNumber;
+    if (email != null) payload['email'] = email;
+    if (chronicConditions != null) payload['chronic_conditions'] = chronicConditions;
+    if (allergies != null) payload['allergies'] = allergies;
+    if (currentMedications != null) payload['current_medications'] = currentMedications;
+    if (primaryDiagnosis != null) payload['primary_diagnosis'] = primaryDiagnosis;
+    if (treatmentStatus != null) payload['treatment_status'] = treatmentStatus;
+    if (medicalNotes != null) payload['medical_notes'] = medicalNotes;
+
+    await _api.client.patch<Map<String, dynamic>>(
+      '${ApiPaths.profileOnboarding.replaceAll('/onboarding', '')}/$profileId/onboarding',
+      data: payload,
+    );
   }
 }

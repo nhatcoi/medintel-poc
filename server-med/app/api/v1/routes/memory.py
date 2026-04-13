@@ -9,6 +9,7 @@ from sqlalchemy import select
 
 from app.api.deps import DbSession
 from app.models.patient_memory import PatientMemory
+from app.services.patient_agent_context_service import refresh_patient_agent_context_best_effort
 from app.schemas.memory import MemoryListResponse, MemoryRead, MemoryUpsert
 
 router = APIRouter()
@@ -46,6 +47,7 @@ def upsert_memory(key: str, profile_id: uuid.UUID, body: MemoryUpsert, db: DbSes
         db.commit()
         db.refresh(existing)
         m = existing
+        refresh_patient_agent_context_best_effort(db, profile_id)
     else:
         m = PatientMemory(
             profile_id=profile_id, key=key,
@@ -54,6 +56,7 @@ def upsert_memory(key: str, profile_id: uuid.UUID, body: MemoryUpsert, db: DbSes
         db.add(m)
         db.commit()
         db.refresh(m)
+        refresh_patient_agent_context_best_effort(db, profile_id)
     return MemoryRead(
         memory_id=m.id, profile_id=m.profile_id,
         key=m.key, value=m.value, source=m.source, confidence=m.confidence,
@@ -86,3 +89,4 @@ def delete_memory(key: str, profile_id: uuid.UUID, db: DbSession):
         raise HTTPException(404, f"Không tìm thấy memory key '{key}'")
     db.delete(m)
     db.commit()
+    refresh_patient_agent_context_best_effort(db, profile_id)

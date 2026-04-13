@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:med_intel_client/l10n/app_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../auth/data/auth_notifier.dart';
@@ -12,7 +13,7 @@ import '../../../providers/providers.dart';
 import '../../../providers/shared_preferences_provider.dart';
 import '../../../services/local_medintel_store.dart';
 
-/// Hiển thị snapshot JSON dữ liệu cục bộ để debug; tự làm mới mỗi [refreshInterval].
+/// Hiển thị snapshot JSON dữ liệu database / cache để debug; tự làm mới mỗi [refreshInterval].
 class LocalDataJsonPanel extends ConsumerStatefulWidget {
   const LocalDataJsonPanel({
     super.key,
@@ -50,6 +51,7 @@ class _LocalDataJsonPanelState extends ConsumerState<LocalDataJsonPanel> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final local = ref.watch(localMedintelProvider);
     final auth = ref.watch(authProvider);
     final display = ref.watch(displayPreferencesProvider);
@@ -80,20 +82,20 @@ class _LocalDataJsonPanelState extends ConsumerState<LocalDataJsonPanel> {
           children: [
             Expanded(
               child: Text(
-                'Dữ liệu cục bộ (JSON)',
+                l10n.localDataTitle,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
               ),
             ),
             TextButton.icon(
               onPressed: _tick,
               icon: const Icon(Icons.refresh_rounded, size: 18),
-              label: const Text('Làm mới'),
+              label: Text(l10n.localDataRefresh),
             ),
           ],
         ),
         const SizedBox(height: 4),
         Text(
-          'Tự làm mới mỗi ${widget.refreshInterval.inSeconds}s (đọc lại state từ SharedPreferences).',
+          l10n.localDataRefreshNote(widget.refreshInterval.inSeconds),
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -130,7 +132,7 @@ class _LocalDataJsonPanelState extends ConsumerState<LocalDataJsonPanel> {
               'email': u.email,
               'role': u.role,
             },
-      'token': _tokenMeta(s.token),
+      'token': _tokenMeta(s.sessionToken),
     };
   }
 

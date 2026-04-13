@@ -1,6 +1,7 @@
 """ORM models — import thứ tự phụ thuộc FK (metadata đăng ký đầy đủ cho create_all)."""
 
 from app.models.profile import Device, Profile
+from app.models.patient_agent_context import PatientAgentContext
 from app.models.audit_log import AuditLog
 from app.models.drug_catalog import Country, DrugGroup, PharmaceuticalCompany
 from app.models.medical import DiseaseCategory, MedicalRecord, TreatmentPeriod
@@ -16,6 +17,7 @@ from app.models.reporting import ComplianceReport, Notification, SystemConfig, S
 __all__ = [
     "Profile",
     "Device",
+    "PatientAgentContext",
     "AuditLog",
     "Country",
     "DrugGroup",

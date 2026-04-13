@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:med_intel_client/l10n/app_localizations.dart';
 
 import '../data/caregiver_ui_model.dart';
 import '../../../core/theme/app_theme.dart';
@@ -16,6 +17,7 @@ class RecentAlertsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final text = Theme.of(context).textTheme;
 
     return Padding(
@@ -24,7 +26,7 @@ class RecentAlertsSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Recent Alerts',
+            l10n.careRecentAlerts,
             style: text.titleLarge?.copyWith(
               color: VitalisColors.caregiverHeroBlue,
               fontWeight: FontWeight.w800,
@@ -33,7 +35,7 @@ class RecentAlertsSection extends StatelessWidget {
           const SizedBox(height: 14),
           if (alerts.isEmpty)
             Text(
-              'Không có cảnh báo gần đây (theo dữ liệu cục bộ).',
+              l10n.careAlertsEmpty,
               style: text.bodyMedium?.copyWith(
                 color: VitalisColors.onSurfaceVariant,
                 height: 1.4,

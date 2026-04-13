@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:med_intel_client/l10n/app_localizations.dart';
 
 import '../../core/theme/vitalis_colors.dart';
 import '../../providers/providers.dart';
@@ -13,35 +14,41 @@ class PatientSetupPage extends ConsumerStatefulWidget {
 }
 
 class _PatientSetupPageState extends ConsumerState<PatientSetupPage> {
-  final _firstNameCtrl = TextEditingController();
-  final _lastNameCtrl = TextEditingController();
+  final _dobCtrl = TextEditingController();
+  final _diagnosisCtrl = TextEditingController();
+  final _allergiesCtrl = TextEditingController();
+  final _notesCtrl = TextEditingController();
   bool _loading = false;
   String? _error;
 
   @override
   void dispose() {
-    _firstNameCtrl.dispose();
-    _lastNameCtrl.dispose();
+    _dobCtrl.dispose();
+    _diagnosisCtrl.dispose();
+    _allergiesCtrl.dispose();
+    _notesCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
-    final first = _firstNameCtrl.text.trim();
-    final last = _lastNameCtrl.text.trim();
-    if (first.isEmpty || last.isEmpty) return;
-
     setState(() { _loading = true; _error = null; });
     try {
-      await ref.read(authProvider.notifier).completeSetup(
-        fullName: '$first $last',
+      await ref.read(authProvider.notifier).updateOnboardingProfile(
+        dateOfBirth: _dobCtrl.text.trim().isEmpty ? null : _dobCtrl.text.trim(),
+        primaryDiagnosis: _diagnosisCtrl.text.trim().isEmpty ? null : _diagnosisCtrl.text.trim(),
+        allergies: _allergiesCtrl.text.trim().isEmpty
+            ? null
+            : _allergiesCtrl.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
+        medicalNotes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
       );
       if (mounted) context.go('/home');
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context);
         setState(() {
           _error = e.toString().contains('Connection refused')
-              ? 'Không thể kết nối server. Vui lòng kiểm tra kết nối.'
-              : 'Không thể lưu thông tin. Vui lòng thử lại.';
+              ? l10n.errorConnectionRefused
+              : 'Không lưu được thông tin, vui lòng thử lại';
           _loading = false;
         });
       }
@@ -50,10 +57,8 @@ class _PatientSetupPageState extends ConsumerState<PatientSetupPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final text = Theme.of(context).textTheme;
-    final canNext = !_loading &&
-        _firstNameCtrl.text.trim().isNotEmpty &&
-        _lastNameCtrl.text.trim().isNotEmpty;
 
     return Scaffold(
       backgroundColor: VitalisColors.primaryContainer,
@@ -65,14 +70,13 @@ class _PatientSetupPageState extends ConsumerState<PatientSetupPage> {
               child: Row(
                 children: [
                   IconButton(
-                    onPressed: () {
-                      if (context.canPop()) {
-                        context.pop();
-                      } else {
-                        context.go('/welcome');
-                      }
-                    },
+                    onPressed: () => context.go('/home'),
                     icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                  ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () => context.go('/home'),
+                    child: const Text('Bỏ qua', style: TextStyle(color: Colors.white70)),
                   ),
                 ],
               ),
@@ -90,16 +94,21 @@ class _PatientSetupPageState extends ConsumerState<PatientSetupPage> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     alignment: Alignment.center,
-                    child: const Icon(Icons.assignment_outlined, color: VitalisColors.primary),
+                    child: const Icon(Icons.medical_information_outlined, color: VitalisColors.primary),
                   ),
                   const SizedBox(height: 14),
                   Text(
-                    "Let's get to know you better!\nWhat's your name?",
+                    'Thông tin y tế',
                     style: text.headlineSmall?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w800,
                       height: 1.25,
                     ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Giúp MedIntel hỗ trợ bạn tốt hơn (có thể bổ sung sau)',
+                    style: text.bodyMedium?.copyWith(color: Colors.white70),
                   ),
                 ],
               ),
@@ -114,25 +123,34 @@ class _PatientSetupPageState extends ConsumerState<PatientSetupPage> {
                     topRight: Radius.circular(28),
                   ),
                 ),
-                child: Padding(
+                child: SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
                   child: Column(
                     children: [
                       TextField(
-                        controller: _firstNameCtrl,
-                        onChanged: (_) => setState(() {}),
-                        textInputAction: TextInputAction.next,
+                        controller: _dobCtrl,
+                        keyboardType: TextInputType.datetime,
                         style: const TextStyle(color: VitalisColors.onSurface),
-                        decoration: _lineDecor('First name*'),
+                        decoration: _lineDecor('Ngày sinh (YYYY-MM-DD)', Icons.cake_outlined),
                       ),
                       const SizedBox(height: 20),
                       TextField(
-                        controller: _lastNameCtrl,
-                        onChanged: (_) => setState(() {}),
-                        textInputAction: TextInputAction.done,
-                        onSubmitted: (_) => canNext ? _submit() : null,
+                        controller: _diagnosisCtrl,
                         style: const TextStyle(color: VitalisColors.onSurface),
-                        decoration: _lineDecor('Last name*'),
+                        decoration: _lineDecor('Bệnh nền chính', Icons.healing_outlined),
+                      ),
+                      const SizedBox(height: 20),
+                      TextField(
+                        controller: _allergiesCtrl,
+                        style: const TextStyle(color: VitalisColors.onSurface),
+                        decoration: _lineDecor('Dị ứng (phân cách bằng dấu phẩy)', Icons.warning_amber_outlined),
+                      ),
+                      const SizedBox(height: 20),
+                      TextField(
+                        controller: _notesCtrl,
+                        maxLines: 3,
+                        style: const TextStyle(color: VitalisColors.onSurface),
+                        decoration: _lineDecor('Ghi chú y tế khác', Icons.notes_outlined),
                       ),
                       if (_error != null) ...[
                         const SizedBox(height: 14),
@@ -143,15 +161,13 @@ class _PatientSetupPageState extends ConsumerState<PatientSetupPage> {
                           ),
                         ),
                       ],
-                      const Spacer(),
+                      const SizedBox(height: 32),
                       SizedBox(
                         width: double.infinity,
                         child: FilledButton(
-                          onPressed: canNext ? _submit : null,
+                          onPressed: _loading ? null : _submit,
                           style: FilledButton.styleFrom(
-                            backgroundColor: canNext
-                                ? VitalisColors.primary
-                                : VitalisColors.outlineVariantBase.withValues(alpha: 0.5),
+                            backgroundColor: VitalisColors.primary,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(999),
@@ -167,7 +183,7 @@ class _PatientSetupPageState extends ConsumerState<PatientSetupPage> {
                               : Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    const Text('Next'),
+                                    Text(l10n.patientSetupNext),
                                     const SizedBox(width: 8),
                                     Icon(Icons.chevron_right_rounded, color: Colors.white.withValues(alpha: 0.9)),
                                   ],
@@ -185,9 +201,10 @@ class _PatientSetupPageState extends ConsumerState<PatientSetupPage> {
     );
   }
 
-  InputDecoration _lineDecor(String label) {
+  InputDecoration _lineDecor(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
+      prefixIcon: Icon(icon, size: 20, color: VitalisColors.onSurfaceVariant),
       labelStyle: const TextStyle(color: VitalisColors.onSurfaceVariant),
       enabledBorder: UnderlineInputBorder(
         borderSide: BorderSide(color: VitalisColors.outlineVariantBase.withValues(alpha: 0.5)),

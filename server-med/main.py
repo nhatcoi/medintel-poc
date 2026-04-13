@@ -1,19 +1,18 @@
 """Điểm vào FastAPI MedIntel — chạy: uvicorn main:app --reload --app-dir ."""
 
 import logging
-import uuid
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import RedirectResponse
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.v1.router import api_router
 from app.core.config import settings
 from app.core.db_bootstrap import ensure_postgres_database
+from app.core.startup_seed import seed_reference_data
 from app.middleware.http_logging import HttpLoggingMiddleware
 import app.models  # noqa: F401 — đăng ký metadata
 
@@ -21,6 +20,12 @@ from database.session import Base, engine
 
 _log = logging.getLogger("uvicorn.error")
 logging.getLogger("medintel.http").setLevel(logging.INFO)
+logging.getLogger("medintel.welcome_hints").setLevel(logging.INFO)
+logging.getLogger("medintel.chat").setLevel(logging.INFO)
+# Giảm log "BertModel LOAD REPORT" / position_ids khi nạp sentence-transformers
+logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
+logging.getLogger("transformers").setLevel(logging.WARNING)
+logging.getLogger("transformers.modeling_utils").setLevel(logging.ERROR)
 
 
 @asynccontextmanager
@@ -28,43 +33,28 @@ async def lifespan(app: FastAPI):
     ensure_postgres_database(settings.database_url)
     if settings.create_tables_on_startup:
         Base.metadata.create_all(bind=engine)
-        from app.models.medical import DiseaseCategory
-        from app.models.profile import Profile
-
         with Session(engine) as session:
-            try:
-                if not session.scalars(select(DiseaseCategory).limit(1)).first():
-                    session.add(
-                        DiseaseCategory(
-                            category_name="Chưa phân loại",
-                            description="Mặc định hệ thống / OCR",
-                        )
-                    )
-                    session.commit()
-            except Exception as e:
-                print(f"Could not seed disease category: {e}")
-                session.rollback()
+            seed_reference_data(session)
 
-            try:
-                raw_uid = str(settings.default_prescription_user_id).strip()
-                if not raw_uid:
-                    raise ValueError("default_prescription_user_id trống")
-                uid = uuid.UUID(raw_uid)
-                if not session.get(Profile, uid):
-                    session.add(
-                        Profile(
-                            id=uid,
-                            full_name="Demo User",
-                            role="patient",
-                            email="demo@medintel.local",
-                        )
-                    )
-                    session.commit()
-                    print(f"Created demo profile: {uid}")
-            except Exception as e:
-                print(f"Could not create demo profile: {e}")
-                session.rollback()
+    if settings.embedding_warmup_on_startup:
+        import asyncio
+
+        from ai.rag.embedding import warmup_embedding_model
+
+        try:
+            loop = asyncio.get_running_loop()
+            await loop.run_in_executor(None, warmup_embedding_model)
+            _log.info("Embedding model warmup done")
+        except Exception as e:
+            _log.warning("Embedding warmup failed (RAG sẽ nạp lần đầu khi cần): %s", e)
+
     yield
+    try:
+        from ai.chatbot.llm_client import close_llm_http_client
+
+        await close_llm_http_client()
+    except Exception:
+        pass
 
 
 _OPENAPI_TAGS = [

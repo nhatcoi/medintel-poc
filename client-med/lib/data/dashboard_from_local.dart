@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:med_intel_client/l10n/app_localizations.dart';
 
 import '../features/caregiver/data/caregiver_ui_model.dart';
 import '../features/home/data/home_ui_model.dart';
 import 'local_medintel_state.dart';
 
-/// Gộp dữ liệu cục bộ (thuốc + log liều) thành UI Home / Care — không dùng mẫu tĩnh.
+/// Gộp dữ liệu đồng bộ database / cache (thuốc + log liều) thành UI Home / Care — không dùng mẫu tĩnh.
 class DashboardFromLocal {
   DashboardFromLocal._();
 
-  static HomeUiModel buildHome(LocalMedintelState local, String userName) {
+  static HomeUiModel buildHome(
+    LocalMedintelState local,
+    String userName,
+    AppLocalizations l10n,
+  ) {
     final day = _dateOnly(DateTime.now());
     final meds = local.medications;
 
@@ -29,9 +35,10 @@ class DashboardFromLocal {
             name: m.name,
             dosageLabel: (m.dosageLabel != null && m.dosageLabel!.trim().isNotEmpty)
                 ? m.dosageLabel!.trim()
-                : 'Thuốc',
-            timeLabel: _timeLabelForMed(local, m.name, day, m.scheduleHint),
+                : l10n.dashMedFallback,
+            timeLabel: _timeLabelForMed(local, m.name, day, m.scheduleHint, l10n),
             status: _toHomeStatus(_statusForMedOnDay(local, m.name, day)),
+            medicationServerId: m.id.trim().isNotEmpty ? m.id.trim() : null,
             icon: Icons.medication_rounded,
           ),
         )
@@ -75,8 +82,9 @@ class DashboardFromLocal {
   static CaregiverDashboardUiModel buildCaregiver(
     LocalMedintelState local,
     String patientName,
+    AppLocalizations l10n,
   ) {
-    final home = buildHome(local, patientName);
+    final home = buildHome(local, patientName, l10n);
     final today = DateTime.now();
     final day = _dateOnly(today);
     final meds = local.medications;
@@ -85,17 +93,17 @@ class DashboardFromLocal {
         .map(
           (m) => MedicationDoseItem(
             name: m.name,
-            timeLabel: _timeLabelForMed(local, m.name, day, m.scheduleHint),
+            timeLabel: _timeLabelForMed(local, m.name, day, m.scheduleHint, l10n),
             dosageLabel: (m.dosageLabel != null && m.dosageLabel!.trim().isNotEmpty)
                 ? m.dosageLabel!.trim()
-                : 'Thuốc',
+                : l10n.dashMedFallback,
             status: _toCareStatus(_statusForMedOnDay(local, m.name, day)),
           ),
         )
         .toList();
 
     final weekly = _weeklyFraction(local, day);
-    final alerts = _buildAlerts(local, patientName, day);
+    final alerts = _buildAlerts(local, patientName, day, l10n);
 
     return CaregiverDashboardUiModel(
       patientName: patientName,
@@ -103,10 +111,10 @@ class DashboardFromLocal {
       dosesTaken: home.dosesTaken,
       dosesTotal: home.dosesTotal,
       weeklyScoreFraction: weekly,
-      weeklyCaption: _weeklyCaptionVi(weekly),
-      vitalsHeadline: 'CHƯA KẾT NỐI',
-      vitalsSub: 'Sinh hiệu — tích hợp thiết bị sau',
-      medicationsDateLabel: _dateChipLabel(today),
+      weeklyCaption: _weeklyCaption(l10n, weekly),
+      vitalsHeadline: l10n.careVitalsDisconnected,
+      vitalsSub: l10n.careVitalsSubtitle,
+      medicationsDateLabel: _dateChipLabel(today, l10n),
       medications: medItems,
       alerts: alerts,
     );
@@ -147,6 +155,7 @@ class DashboardFromLocal {
     String medName,
     DateTime day,
     String? scheduleHint,
+    AppLocalizations l10n,
   ) {
     final key = medName.toLowerCase().trim();
     final logs = local.doseLogs
@@ -161,19 +170,19 @@ class DashboardFromLocal {
 
     if (logs.isNotEmpty) {
       final dt = DateTime.tryParse(logs.first.recordedAtIso);
-      if (dt != null) return _formatTimeVi(dt.toLocal());
+      if (dt != null) return _formatTime(dt.toLocal(), l10n);
     }
     final hint = scheduleHint?.trim();
     if (hint != null && hint.isNotEmpty) return hint;
-    return 'Trong ngày';
+    return l10n.dashTimeInDay;
   }
 
-  static String _formatTimeVi(DateTime t) {
+  static String _formatTime(DateTime t, AppLocalizations l10n) {
     final h = t.hour;
     final m = t.minute.toString().padLeft(2, '0');
-    if (h < 12) return '$h:$m SA';
+    if (h < 12) return l10n.dashTimeAm(h.toString(), m);
     final h12 = h == 12 ? 12 : h - 12;
-    return '$h12:$m CH';
+    return l10n.dashTimePm(h12.toString(), m);
   }
 
   static double _weeklyFraction(LocalMedintelState local, DateTime todayStart) {
@@ -193,35 +202,37 @@ class DashboardFromLocal {
     return (sum / 7).clamp(0.0, 1.0);
   }
 
-  static String _weeklyCaptionVi(double f) {
-    if (f >= 0.85) return 'TIẾN ĐỘ TỐT';
-    if (f >= 0.55) return 'ĐANG ỔN ĐỊNH';
-    if (f > 0) return 'CẦN THEO DÕI THÊM';
-    return 'CHƯA CÓ DỮ LIỆU TUẦN';
+  static String _weeklyCaption(AppLocalizations l10n, double f) {
+    if (f >= 0.85) return l10n.weeklyCaptionGood;
+    if (f >= 0.55) return l10n.weeklyCaptionOk;
+    if (f > 0) return l10n.weeklyCaptionWatch;
+    return l10n.weeklyCaptionNoData;
   }
 
-  static String _dateChipLabel(DateTime d) {
-    const labels = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
-    final i = d.weekday == DateTime.sunday ? 0 : d.weekday;
-    return '${labels[i]}, ${d.day}/${d.month}';
+  static String _dateChipLabel(DateTime d, AppLocalizations l10n) {
+    final wd = DateFormat.E(l10n.localeName).format(d);
+    return '$wd, ${d.day}/${d.month}';
   }
 
   static List<CareAlertItem> _buildAlerts(
     LocalMedintelState local,
     String patientName,
     DateTime day,
+    AppLocalizations l10n,
   ) {
     final out = <CareAlertItem>[];
-    final shortName = patientName.trim().isEmpty ? 'Người dùng' : patientName.trim();
+    final shortName =
+        patientName.trim().isEmpty ? l10n.dashUserFallback : patientName.trim();
 
     for (final m in local.medications) {
       if (_statusForMedOnDay(local, m.name, day) == _MedDayStatus.missed) {
         out.add(
           CareAlertItem(
             isUrgent: true,
-            title: '$shortName bỏ lỡ / bỏ qua liều',
-            subtitle: '${m.name} • hôm nay (dữ liệu cục bộ)',
-            actionLabel: 'MỞ AI CHAT',
+            title: l10n.dashAlertMissedTitle(shortName),
+            subtitle: l10n.dashAlertMissedSubtitle(m.name, l10n.dashTodayLocalNote),
+            actionLabel: l10n.careOpenAiChat,
+            opensAiChat: true,
           ),
         );
       }
@@ -238,7 +249,7 @@ class DashboardFromLocal {
       out.add(
         CareAlertItem(
           isUrgent: false,
-          title: 'Ghi chú chăm sóc',
+          title: l10n.dashAlertCareNote,
           subtitle: preview,
           actionLabel: null,
         ),

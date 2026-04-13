@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:med_intel_client/l10n/app_localizations.dart';
 
 import '../../../core/theme/vitalis_colors.dart';
 
@@ -10,6 +11,7 @@ class ScanTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final text = Theme.of(context).textTheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 12, 8),
@@ -30,7 +32,7 @@ class ScanTopBar extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Text(
-            'Quét đơn thuốc',
+            l10n.scanTitle,
             style: text.titleMedium?.copyWith(
               fontWeight: FontWeight.w800,
               color: VitalisColors.onSurface,
@@ -41,7 +43,7 @@ class ScanTopBar extends StatelessWidget {
             IconButton(
               onPressed: onReset,
               icon: const Icon(Icons.close_rounded),
-              tooltip: 'Huỷ',
+              tooltip: l10n.scanTooltipDismiss,
               color: VitalisColors.onSurfaceVariant,
             ),
         ],

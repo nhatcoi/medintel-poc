@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
+import logging
 import re
 from dataclasses import dataclass, field
 from typing import Any
@@ -11,7 +13,30 @@ import httpx
 
 from ai.chatbot.prompts import build_system_prompt
 from app.core.config import settings
+from app.core.llm_openai_compat import apply_max_output_tokens
 from app.services.agent.tool_validation import normalize_suggested_actions, normalize_tool_calls
+
+_log = logging.getLogger("medintel.llm_client")
+
+_llm_http_client: httpx.AsyncClient | None = None
+
+
+def _llm_http() -> httpx.AsyncClient:
+    """Một client giữ kết nối — tránh TLS + TCP handshake mỗi lượt chat."""
+    global _llm_http_client
+    if _llm_http_client is None:
+        _llm_http_client = httpx.AsyncClient(
+            timeout=httpx.Timeout(60.0, connect=15.0),
+            limits=httpx.Limits(max_keepalive_connections=8, max_connections=16),
+        )
+    return _llm_http_client
+
+
+async def close_llm_http_client() -> None:
+    global _llm_http_client
+    if _llm_http_client is not None:
+        await _llm_http_client.aclose()
+        _llm_http_client = None
 
 
 @dataclass
@@ -39,6 +64,26 @@ def _parse_llm_json(content: str) -> dict | None:
     except json.JSONDecodeError:
         return None
     return data if isinstance(data, dict) else None
+
+
+def _extract_embedded_json_object(text: str) -> dict | None:
+    """Khi model chèn lời thoại trước JSON (vi phạm 'chỉ JSON'), trích object `{...}` đầu tiên đủ lớn."""
+    raw = text.strip()
+    start = raw.find("{")
+    end = raw.rfind("}")
+    if start < 0 or end <= start:
+        return None
+    chunk = raw[start : end + 1]
+    try:
+        data = json.loads(chunk)
+    except json.JSONDecodeError:
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _parse_medintel_payload(text: str) -> dict | None:
+    """Parse toàn chuỗi hoặc JSON nhúng sau văn bản."""
+    return _parse_llm_json(text) or _extract_embedded_json_object(text)
 
 
 def _normalize_source_type(raw: object) -> str:
@@ -96,13 +141,21 @@ async def reply(
                 messages.append({"role": role, "content": content})
     messages.append({"role": "user", "content": user_message})
 
-    payload = {
+    payload: dict[str, object] = {
         "model": settings.llm_model,
         "stream": False,
         "messages": messages,
     }
+    apply_max_output_tokens(
+        payload,
+        base_url=settings.llm_base_url,
+        limit=settings.llm_max_tokens,
+    )
 
-    async with httpx.AsyncClient(timeout=60) as client:
+    client = _llm_http()
+    max_retries = 3
+    resp = None
+    for attempt in range(max_retries):
         resp = await client.post(
             settings.llm_base_url,
             headers={
@@ -111,8 +164,15 @@ async def reply(
             },
             json=payload,
         )
-        resp.raise_for_status()
-        data = resp.json()
+        if resp.status_code != 429:
+            break
+        retry_after = float(resp.headers.get("retry-after", 2 ** (attempt + 1)))
+        retry_after = min(retry_after, 30.0)
+        _log.warning("LLM 429 rate-limited, retry %d/%d in %.1fs", attempt + 1, max_retries, retry_after)
+        await asyncio.sleep(retry_after)
+    assert resp is not None
+    resp.raise_for_status()
+    data = resp.json()
 
     choices = data.get("choices", [])
     if not choices:
@@ -125,17 +185,21 @@ async def reply(
     if not text:
         return ChatTurnResult(reply="Không có phản hồi từ AI.")
 
-    parsed = _parse_llm_json(text)
+    parsed = _parse_medintel_payload(text)
     if parsed is not None:
         reply_body = str(parsed.get("reply", "")).strip()
+        if not reply_body and "{" in text:
+            prefix = text[: text.find("{")].strip()
+            if prefix:
+                reply_body = prefix
         source_type = _normalize_source_type(parsed.get("source_type"))
         confidence = _normalize_confidence(parsed.get("confidence"), default=0.4)
         citations = _normalize_citations(parsed.get("citations"))
         actions = normalize_suggested_actions(parsed.get("suggested_actions"))
         tools = normalize_tool_calls(parsed.get("tool_calls"))
-        if reply_body:
+        if reply_body or actions or tools:
             return ChatTurnResult(
-                reply=reply_body,
+                reply=reply_body or "Đã xử lý.",
                 source_type=source_type,
                 confidence=confidence,
                 citations=citations,

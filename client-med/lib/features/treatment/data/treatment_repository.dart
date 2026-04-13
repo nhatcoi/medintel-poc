@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../services/api_service.dart';
+import '../../../core/constants/api_paths.dart';
 import 'treatment_models.dart';
 
 class TreatmentRepository {
@@ -10,16 +11,30 @@ class TreatmentRepository {
 
   Future<List<MedicationItem>> listMedications(String profileId) async {
     final resp = await _api.client.get<Map<String, dynamic>>(
-      '/api/v1/treatment/medications',
+      ApiPaths.treatmentMedications,
       queryParameters: {'profile_id': profileId},
       options: Options(receiveTimeout: const Duration(seconds: 30)),
     );
-    final raw = resp.data?['items'];
+    final raw = resp.data?['items'] ?? resp.data?['medications'];
     if (raw is! List) return const [];
-    return raw
+    final meds = raw
         .whereType<Map>()
         .map((e) => MedicationItem.fromJson(Map<String, dynamic>.from(e)))
         .toList();
+    final enriched = <MedicationItem>[];
+    for (final m in meds) {
+      try {
+        final schedules = await listSchedules(m.medicationId);
+        enriched.add(
+          m.copyWith(
+            scheduleTimes: schedules.map((s) => s.scheduledTime).toList(),
+          ),
+        );
+      } catch (_) {
+        enriched.add(m);
+      }
+    }
+    return enriched;
   }
 
   Future<MedicationItem> createMedication({
@@ -31,19 +46,32 @@ class TreatmentRepository {
     List<String> scheduleTimes = const [],
   }) async {
     final resp = await _api.client.post<Map<String, dynamic>>(
-      '/api/v1/treatment/medications',
+      ApiPaths.treatmentMedications,
       data: {
         'profile_id': profileId,
         'medication_name': medicationName,
         'dosage': dosage,
         'frequency': frequency,
         'instructions': instructions,
-        'schedule_times': scheduleTimes,
+        'start_date': DateTime.now().toUtc().toIso8601String().split('T').first,
       },
     );
     final data = resp.data;
     if (data == null) throw const FormatException('Empty medication response');
-    return MedicationItem.fromJson(data);
+    final item = MedicationItem.fromJson(data);
+    for (final t in scheduleTimes) {
+      final clean = t.trim();
+      if (clean.isEmpty) continue;
+      final normalized = clean.length == 5 ? '$clean:00' : clean;
+      await createSchedule(
+        medicationId: item.medicationId,
+        scheduledTime: normalized,
+      );
+    }
+    final schedules = await listSchedules(item.medicationId);
+    return item.copyWith(
+      scheduleTimes: schedules.map((s) => s.scheduledTime).toList(),
+    );
   }
 
   Future<MedicationItem> updateMedication({
@@ -64,7 +92,7 @@ class TreatmentRepository {
     if (scheduleTimes != null) payload['schedule_times'] = scheduleTimes;
 
     final resp = await _api.client.patch<Map<String, dynamic>>(
-      '/api/v1/treatment/medications/$medicationId',
+      '${ApiPaths.treatmentMedications}/$medicationId',
       data: payload,
     );
     final data = resp.data;
@@ -78,11 +106,20 @@ class TreatmentRepository {
     required String status,
     String? notes,
   }) async {
+    final schedules = await listSchedules(medicationId);
+    if (schedules.isEmpty) {
+      throw const FormatException('No schedule found for medication');
+    }
+    final scheduleId = schedules.first.scheduleId;
+    final now = DateTime.now().toUtc().toIso8601String();
     final resp = await _api.client.post<Map<String, dynamic>>(
-      '/api/v1/treatment/medications/$medicationId/logs',
+      '${ApiPaths.treatmentMedications}/$medicationId/logs',
       data: {
+        'schedule_id': scheduleId,
         'profile_id': profileId,
         'status': status,
+        'scheduled_datetime': now,
+        'actual_datetime': now,
         'notes': notes,
       },
     );
@@ -92,10 +129,11 @@ class TreatmentRepository {
   }
 
   Future<List<MedicationLogItem>> listMedicationLogs(String medicationId) async {
-    final resp = await _api.client.get<Map<String, dynamic>>(
-      '/api/v1/treatment/medications/$medicationId/logs',
+    final resp = await _api.client.get(
+      '${ApiPaths.treatmentMedications}/$medicationId/logs',
     );
-    final raw = resp.data?['items'];
+    final data = resp.data;
+    final raw = data is List ? data : (data is Map<String, dynamic> ? data['items'] : null);
     if (raw is! List) return const [];
     return raw
         .whereType<Map>()
@@ -103,17 +141,81 @@ class TreatmentRepository {
         .toList();
   }
 
+  Future<List<MedicationScheduleItem>> listSchedules(String medicationId) async {
+    final resp = await _api.client.get(
+      '${ApiPaths.treatmentMedications}/$medicationId/schedules',
+    );
+    final data = resp.data;
+    final raw = data is List ? data : (data is Map<String, dynamic> ? data['items'] : null);
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map>()
+        .map((e) => MedicationScheduleItem.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+
+  Future<MedicationScheduleItem> createSchedule({
+    required String medicationId,
+    required String scheduledTime,
+  }) async {
+    final resp = await _api.client.post<Map<String, dynamic>>(
+      '${ApiPaths.treatmentMedications}/$medicationId/schedules',
+      data: {
+        'scheduled_time': scheduledTime,
+        'repeat_pattern': 'daily',
+        'reminder_enabled': true,
+        'status': 'active',
+      },
+    );
+    final data = resp.data;
+    if (data == null) throw const FormatException('Empty schedule response');
+    return MedicationScheduleItem.fromJson(data);
+  }
+
   Future<AdherenceSummary> getAdherenceSummary({
     required String profileId,
     int days = 7,
   }) async {
     final resp = await _api.client.get<Map<String, dynamic>>(
-      '/api/v1/treatment/adherence/summary',
+      ApiPaths.treatmentAdherenceSummary,
       queryParameters: {
         'profile_id': profileId,
         'days': days,
       },
     );
     return AdherenceSummary.fromJson(resp.data ?? const {});
+  }
+
+  Future<NextDoseInfo?> getNextDose(String profileId) async {
+    try {
+      final resp = await _api.client.get<Map<String, dynamic>>(
+        ApiPaths.treatmentNextDose,
+        queryParameters: {'profile_id': profileId},
+      );
+      final data = resp.data;
+      if (data == null) return null;
+      return NextDoseInfo.fromJson(data);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<List<MissedDoseItem>> getMissedDoseCheck(
+    String profileId, {
+    int graceMinutes = 60,
+  }) async {
+    final resp = await _api.client.get<Map<String, dynamic>>(
+      ApiPaths.treatmentMissedDoseCheck,
+      queryParameters: {
+        'profile_id': profileId,
+        'grace_minutes': graceMinutes,
+      },
+    );
+    final raw = resp.data?['items'];
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map>()
+        .map((e) => MissedDoseItem.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
   }
 }

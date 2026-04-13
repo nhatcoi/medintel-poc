@@ -27,6 +27,11 @@ def _get_model():
     return model
 
 
+def warmup_embedding_model() -> None:
+    """Gọi khi startup: nạp weights + một lần encode tối thiểu — tránh chậm ở tin nhắn/RAG đầu tiên."""
+    get_embedding_sync("warmup")
+
+
 def get_embeddings_sync(texts: list[str]) -> list[list[float]]:
     """Batch encode → list of float vectors."""
     model = _get_model()

@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException
 
 from ai.rag.retrieval import build_rag_context, hybrid_search
 from app.api.deps import DbSession
+from app.core.config import settings
 from app.schemas.rag import RagChunkResult, RagSearchRequest, RagSearchResponse
 
 router = APIRouter()
@@ -28,5 +29,5 @@ async def rag_search(body: RagSearchRequest, db: DbSession):
         )
         for r in results
     ]
-    context = build_rag_context(results)
+    context = build_rag_context(results, max_chars=settings.rag_context_max_chars)
     return RagSearchResponse(query=body.query, results=chunks, context=context)

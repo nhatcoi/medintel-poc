@@ -1,6 +1,10 @@
-from typing import Any
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+WelcomeHintsSource = Literal["llm", "template"]
+
+SuggestedActionCategory = Literal["app", "knowledge", "other"]
 
 
 class SuggestedAction(BaseModel):
@@ -11,10 +15,22 @@ class SuggestedAction(BaseModel):
         default="",
         description="Nội dung gửi lên chat khi user chọn (nếu rỗng dùng label)",
     )
+    category: SuggestedActionCategory = Field(
+        default="other",
+        description="app = thao tác trong ứng dụng; knowledge = tra cứu kiến thức (RAG/search); other = còn lại",
+    )
+
+    @field_validator("category", mode="before")
+    @classmethod
+    def _coerce_category(cls, v: object) -> str:
+        s = str(v or "other").strip().lower()
+        if s in ("app", "knowledge", "other"):
+            return s
+        return "other"
 
 
 class ToolCall(BaseModel):
-    """Lệnh agent — client thực thi & lưu cục bộ (sync server làm sau)."""
+    """Lệnh agent — client thực thi & lưu database (đồng bộ server)."""
 
     tool: str
     args: dict[str, Any] = Field(default_factory=dict)
@@ -44,6 +60,43 @@ class ChatRequest(BaseModel):
     include_medication_context: bool = Field(
         default=False,
         description="Nếu true và có profile_id hợp lệ: ghép danh sách thuốc đã lưu trên server vào system prompt",
+    )
+    include_patient_context_chunks: bool = Field(
+        default=False,
+        description=(
+            "Nếu true và có profile_id: ghép thêm bối cảnh snapshot (hồ sơ, tủ thuốc, log, tuân thủ…) "
+            "đã chunk — bổ sung cho medication_context; không chứa UUID trong prompt."
+        ),
+    )
+    patient_context_use_stored_md: bool = Field(
+        default=True,
+        description=(
+            "Khi include_patient_context_chunks=true: ưu tiên đọc markdown đã lưu (bảng patient_agent_context); "
+            "false = luôn ghép trực tiếp từ SQL mỗi lượt (nặng hơn)."
+        ),
+    )
+
+
+class WelcomeHintsResponse(BaseModel):
+    """Gợi ý dòng chữ chào màn chat — từ LLM + dữ liệu DB hoặc template."""
+
+    hints: list[str] = Field(default_factory=list)
+    source: WelcomeHintsSource = Field(
+        default="template",
+        description="llm = sinh từ AI; template = cá nhân hóa theo DB không qua LLM",
+    )
+
+
+SuggestedQuestionsSource = Literal["llm", "template"]
+
+
+class SuggestedQuestionsResponse(BaseModel):
+    """Câu hỏi / chip gợi ý sau welcome hoặc trong khay chat."""
+
+    questions: list[str] = Field(default_factory=list)
+    source: SuggestedQuestionsSource = Field(
+        default="template",
+        description="llm = sinh từ AI theo snapshot đã chunk; template = rule-based",
     )
 
 

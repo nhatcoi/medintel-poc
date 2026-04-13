@@ -17,6 +17,7 @@ os.environ["CREATE_TABLES_ON_STARTUP"] = "true"
 os.environ["HTTP_ACCESS_LOG"] = "false"
 os.environ["HTTP_LOG_BODIES"] = "false"
 os.environ["DEFAULT_PRESCRIPTION_USER_ID"] = "00000000-0000-0000-0000-000000000099"
+os.environ["EMBEDDING_WARMUP_ON_STARTUP"] = "false"
 
 from main import app  # noqa: E402
 

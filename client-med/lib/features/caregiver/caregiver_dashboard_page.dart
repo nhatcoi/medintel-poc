@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:med_intel_client/l10n/app_localizations.dart';
 
 import '../../core/theme/vitalis_colors.dart';
 import '../../data/dashboard_from_local.dart';
@@ -12,18 +13,19 @@ import 'widgets/monitoring_cards_block.dart';
 import 'widgets/patient_monitoring_header.dart';
 import 'widgets/recent_alerts_section.dart';
 
-/// **Care** — theo dõi từ dữ liệu cục bộ (cùng nguồn với Home); không dùng mẫu John Doe.
+/// **Care** — theo dõi từ dữ liệu database / cache (cùng nguồn với Home); không dùng mẫu John Doe.
 class CaregiverDashboardPage extends ConsumerWidget {
   const CaregiverDashboardPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final local = ref.watch(localMedintelProvider);
     final auth = ref.watch(authProvider);
     final patientName = auth.user?.fullName?.trim().isNotEmpty == true
         ? auth.user!.fullName!.trim()
-        : 'Bạn';
-    final model = DashboardFromLocal.buildCaregiver(local, patientName);
+        : l10n.genericYou;
+    final model = DashboardFromLocal.buildCaregiver(local, patientName, l10n);
 
     return Scaffold(
       backgroundColor: VitalisColors.background,
@@ -60,7 +62,7 @@ class CaregiverDashboardPage extends ConsumerWidget {
                 RecentAlertsSection(
                   alerts: model.alerts,
                   onActionTap: (alert) {
-                    if (alert.actionLabel == 'MỞ AI CHAT') {
+                    if (alert.opensAiChat) {
                       context.goNamed('ai');
                     }
                   },

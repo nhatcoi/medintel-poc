@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:med_intel_client/l10n/app_localizations.dart';
 
 import '../data/caregiver_ui_model.dart';
 import '../../../core/theme/app_theme.dart';
@@ -16,6 +17,7 @@ class MedicationsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final text = Theme.of(context).textTheme;
 
     return Padding(
@@ -26,7 +28,7 @@ class MedicationsSection extends StatelessWidget {
           Row(
             children: [
               Text(
-                'Medications',
+                l10n.careMedicationsTitle,
                 style: text.titleLarge?.copyWith(
                   color: VitalisColors.caregiverHeroBlue,
                   fontWeight: FontWeight.w800,
@@ -52,7 +54,7 @@ class MedicationsSection extends StatelessWidget {
           const SizedBox(height: 16),
           if (items.isEmpty)
             Text(
-              'Chưa có thuốc trong danh sách cục bộ. Thêm qua Quét đơn hoặc AI Chat.',
+              l10n.careMedicationsEmpty,
               style: text.bodyMedium?.copyWith(
                 color: VitalisColors.onSurfaceVariant,
                 height: 1.4,
@@ -61,7 +63,7 @@ class MedicationsSection extends StatelessWidget {
           else
             for (var i = 0; i < items.length; i++) ...[
               if (i > 0) const SizedBox(height: 16),
-              _MedicationRow(item: items[i]),
+              _MedicationRow(item: items[i], l10n: l10n),
             ],
         ],
       ),
@@ -70,14 +72,15 @@ class MedicationsSection extends StatelessWidget {
 }
 
 class _MedicationRow extends StatelessWidget {
-  const _MedicationRow({required this.item});
+  const _MedicationRow({required this.item, required this.l10n});
 
   final MedicationDoseItem item;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
-    final meta = _MetaForStatus(item.status);
+    final meta = _MetaForStatus(item.status, l10n);
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -139,7 +142,7 @@ class _MedicationRow extends StatelessWidget {
 }
 
 class _MetaForStatus {
-  _MetaForStatus(MedicationDoseStatus s)
+  _MetaForStatus(MedicationDoseStatus s, AppLocalizations l10n)
       : leadingBg = switch (s) {
           MedicationDoseStatus.taken => VitalisColors.statusSuccessSoft,
           MedicationDoseStatus.missed => VitalisColors.statusErrorSoft,
@@ -156,9 +159,9 @@ class _MetaForStatus {
           MedicationDoseStatus.upcoming => Icons.schedule_rounded,
         },
         badgeLabel = switch (s) {
-          MedicationDoseStatus.taken => 'TAKEN',
-          MedicationDoseStatus.missed => 'MISSED',
-          MedicationDoseStatus.upcoming => 'UPCOMING',
+          MedicationDoseStatus.taken => l10n.doseStatusTaken,
+          MedicationDoseStatus.missed => l10n.doseStatusMissed,
+          MedicationDoseStatus.upcoming => l10n.doseStatusUpcoming,
         },
         badgeBg = switch (s) {
           MedicationDoseStatus.taken => VitalisColors.statusSuccessSoft,

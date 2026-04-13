@@ -9,6 +9,7 @@ import re
 import httpx
 
 from app.core.config import settings
+from app.core.llm_openai_compat import apply_max_output_tokens
 
 EXTRACT_PROMPT = """Bạn là một chuyên gia y tế. Hãy phân tích ảnh đơn thuốc/toa thuốc này và trích xuất thông tin.
 
@@ -44,8 +45,8 @@ async def extract_prescription(image_bytes: bytes, mime_type: str = "image/jpeg"
     """Gửi ảnh đơn thuốc đến AI Vision, trả về dict đã parse."""
     b64 = base64.b64encode(image_bytes).decode("utf-8")
 
-    payload = {
-        "model": settings.llm_model,
+    payload: dict = {
+        "model": (settings.llm_vision_model or settings.llm_model).strip(),
         "stream": False,
         "messages": [
             {
@@ -61,8 +62,8 @@ async def extract_prescription(image_bytes: bytes, mime_type: str = "image/jpeg"
                 ],
             }
         ],
-        "max_tokens": 2048,
     }
+    apply_max_output_tokens(payload, base_url=settings.llm_base_url, limit=2048)
 
     async with httpx.AsyncClient(timeout=90) as client:
         try:

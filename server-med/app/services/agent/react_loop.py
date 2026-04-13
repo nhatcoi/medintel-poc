@@ -13,6 +13,7 @@ Internal tools:
 
 from __future__ import annotations
 
+import re
 import uuid
 from dataclasses import dataclass, field
 from typing import Any
@@ -32,6 +33,34 @@ from app.services.memory.long_term import (
 from app.services.memory.short_term import load_recent_turns
 
 MAX_REACT_STEPS = 3
+
+# Chỉ khớp toàn chuỗi — tránh bỏ RAG nhầm câu dài có từ "hi".
+_SMALL_TALK_RE = re.compile(
+    r"""^(
+        hi(\s+there)? |
+        hello(\s+there)? |
+        hey(\s+there)? |
+        chào(\s+bạn)? |
+        xin\s*chào(\s+bạn)? |
+        hế\s*lô |
+        alo+ |
+        ok+ |
+        ừ+ |
+        dạ |
+        vâng(\s+ạ)? |
+        good\s*(morning|afternoon|evening) |
+        bye |
+        tạm\s*biệt
+    )[\s!?.，。,]*$""",
+    re.IGNORECASE | re.VERBOSE,
+)
+
+
+def _is_small_talk_message(text: str) -> bool:
+    raw = (text or "").strip()
+    if len(raw) > 48:
+        return False
+    return bool(_SMALL_TALK_RE.match(raw))
 
 
 @dataclass
@@ -64,7 +93,7 @@ async def _tool_search_drug_kb(
         return f"(lỗi RAG: {exc})", []
     if not results:
         return "(không tìm thấy tri thức nội bộ liên quan)", []
-    return build_rag_context(results), results
+    return build_rag_context(results, max_chars=settings.rag_context_max_chars), results
 
 
 async def _tool_external_search(query: str) -> tuple[str, int, list[str]]:
@@ -76,7 +105,7 @@ async def _tool_external_search(query: str) -> tuple[str, int, list[str]]:
     query = (query or "").strip()
     if not query:
         return "(query rỗng)", 0, []
-    result = await tavily_search(query)
+    result = await tavily_search(query, timeout=settings.tavily_timeout_seconds)
     block = build_external_context(result)
     if not block:
         return "(external search rỗng hoặc chưa cấu hình Tavily)", 0, []
@@ -120,7 +149,7 @@ async def gather_observations(
 
     Đây là biến thể pre-planned của ReAct: thay vì để LLM quyết định từng bước,
     server chủ động gom các observation có ích nhất (RAG + memory) trong 1 lượt.
-    Đổi sang iterative ReAct đầy đủ sau mà không phải viết lại chat_service.
+    Đổi sang iterative ReAct đầy đủ sau mà không phải viết lại app.services.chat.pipeline.
     """
     trace = ReactTrace()
     blocks: list[str] = []
@@ -132,15 +161,31 @@ async def gather_observations(
         if mem_result and not mem_result.startswith("("):
             blocks.append(mem_result)
 
-    # 2. RAG search (Agent 1 — internal KB)
-    rag_block, rag_results = await _tool_search_drug_kb(db, user_text)
-    trace.add("search_drug_kb", {"query": user_text}, rag_block)
-    trace.rag_hit_count = len(rag_results)
-    if rag_block and not rag_block.startswith("("):
-        blocks.append(rag_block)
+    skip_rag = _is_small_talk_message(user_text)
 
-    # 3. Agent 2 fallback: chỉ gọi khi RAG nội bộ không đủ tin cậy
-    if settings.tavily_enabled and settings.tavily_api_key and not _rag_is_confident(rag_results):
+    # 2. RAG (bỏ qua khi chào hỏi ngắn — không cần embed + không kích hoạt load model lần đầu tại đây)
+    if skip_rag:
+        trace.add(
+            "search_drug_kb",
+            {"query": user_text, "skipped": "small_talk"},
+            "(bỏ qua RAG — tin nhắn chào/xã giao ngắn)",
+        )
+        trace.rag_hit_count = 0
+        rag_results: list[RagResult] = []
+    else:
+        rag_block, rag_results = await _tool_search_drug_kb(db, user_text)
+        trace.add("search_drug_kb", {"query": user_text}, rag_block)
+        trace.rag_hit_count = len(rag_results)
+        if rag_block and not rag_block.startswith("("):
+            blocks.append(rag_block)
+
+    # 3. Agent 2 fallback: chỉ khi đã chạy RAG và kết quả không đủ tin cậy
+    if (
+        not skip_rag
+        and settings.tavily_enabled
+        and settings.tavily_api_key
+        and not _rag_is_confident(rag_results)
+    ):
         ext_block, tavily_hits, tavily_urls = await _tool_external_search(user_text)
         trace.add("external_search", {"query": user_text}, ext_block)
         trace.tavily_hit_count = tavily_hits
@@ -160,9 +205,10 @@ async def run_react_turn(
     session_id: uuid.UUID | None,
     user_text: str,
     base_context: str | None = None,
-    history_limit: int = 10,
+    history_limit: int | None = None,
 ) -> tuple[ChatTurnResult, ReactTrace]:
     """Chạy một lượt ReAct: gather observations → gọi LLM với history → trả kết quả."""
+    hist_lim = history_limit if history_limit is not None else settings.chat_history_limit
     # Gather observations (long-term memory + RAG)
     obs_blocks, trace = await gather_observations(
         db, profile_id=profile_id, user_text=user_text
@@ -184,7 +230,7 @@ async def run_react_turn(
     history: list[dict[str, str]] = []
     if session_id is not None:
         try:
-            history = load_recent_turns(db, session_id, limit=history_limit)
+            history = load_recent_turns(db, session_id, limit=hist_lim)
         except Exception:  # noqa: BLE001
             history = []
 

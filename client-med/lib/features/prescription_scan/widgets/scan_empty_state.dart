@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:med_intel_client/l10n/app_localizations.dart';
 
 import '../../../core/theme/vitalis_colors.dart';
 
@@ -14,6 +15,7 @@ class ScanEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final text = Theme.of(context).textTheme;
 
     return Padding(
@@ -36,7 +38,7 @@ class ScanEmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           Text(
-            'Quét đơn thuốc bằng AI',
+            l10n.scanEmptyTitle,
             style: text.headlineSmall?.copyWith(
               fontWeight: FontWeight.w800,
               color: VitalisColors.onSurface,
@@ -44,9 +46,7 @@ class ScanEmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Chụp ảnh hoặc chọn từ thư viện. '
-            'AI sẽ tự động nhận diện thuốc, '
-            'liều dùng và tạo lịch uống.',
+            l10n.scanEmptyBody,
             textAlign: TextAlign.center,
             style: text.bodyMedium?.copyWith(
               color: VitalisColors.onSurfaceVariant,
@@ -59,7 +59,7 @@ class ScanEmptyState extends StatelessWidget {
             child: FilledButton.icon(
               onPressed: onCamera,
               icon: const Icon(Icons.camera_alt_rounded),
-              label: const Text('Chụp ảnh đơn thuốc'),
+              label: Text(l10n.scanCapturePrescription),
               style: FilledButton.styleFrom(
                 backgroundColor: VitalisColors.primary,
                 padding: const EdgeInsets.symmetric(vertical: 16),
@@ -79,7 +79,7 @@ class ScanEmptyState extends StatelessWidget {
             child: OutlinedButton.icon(
               onPressed: onGallery,
               icon: const Icon(Icons.photo_library_outlined),
-              label: const Text('Chọn từ thư viện'),
+              label: Text(l10n.scanFromGallery),
               style: OutlinedButton.styleFrom(
                 foregroundColor: VitalisColors.primary,
                 side: const BorderSide(color: VitalisColors.primary),

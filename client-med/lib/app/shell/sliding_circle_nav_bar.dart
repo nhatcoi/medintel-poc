@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../core/theme/vitalis_colors.dart';
 import 'nav_slot_metrics.dart';
@@ -23,7 +24,6 @@ class SlidingCircleNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final stackH = _barHeight + bottomInset;
 
@@ -74,47 +74,37 @@ class SlidingCircleNavBar extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _NavEntry(
-                        icon: Icons.home_outlined,
-                        label: 'HOME',
+                        icon: LucideIcons.clock,
                         selected: currentIndex == 0,
                         onTap: () => onDestinationSelected(0),
-                        textTheme: textTheme,
                       ),
                     ),
                     Expanded(
                       child: _NavEntry(
-                        icon: Icons.document_scanner_outlined,
-                        label: 'SCAN',
+                        icon: LucideIcons.pill,
                         selected: currentIndex == 1,
                         onTap: () => onDestinationSelected(1),
-                        textTheme: textTheme,
                       ),
                     ),
                     Expanded(
                       child: _NavEntry(
-                        icon: Icons.smart_toy_rounded,
-                        label: 'CHAT',
+                        icon: LucideIcons.layoutGrid,
                         selected: currentIndex == 2,
                         onTap: () => onDestinationSelected(2),
-                        textTheme: textTheme,
                       ),
                     ),
                     Expanded(
                       child: _NavEntry(
-                        icon: Icons.history_rounded,
-                        label: 'HISTORY',
+                        icon: LucideIcons.clipboardList,
                         selected: currentIndex == 3,
                         onTap: () => onDestinationSelected(3),
-                        textTheme: textTheme,
                       ),
                     ),
                     Expanded(
                       child: _NavEntry(
-                        icon: Icons.people_outline_rounded,
-                        label: 'CARE',
+                        icon: LucideIcons.user,
                         selected: currentIndex == 4,
                         onTap: () => onDestinationSelected(4),
-                        textTheme: textTheme,
                       ),
                     ),
                   ],
@@ -171,29 +161,23 @@ class _NavCircleHighlight extends StatelessWidget {
 class _NavEntry extends StatelessWidget {
   const _NavEntry({
     required this.icon,
-    required this.label,
     required this.selected,
     required this.onTap,
-    required this.textTheme,
   });
 
   final IconData icon;
-  final String label;
   final bool selected;
   final VoidCallback onTap;
-  final TextTheme textTheme;
 
   @override
   Widget build(BuildContext context) {
     final iconColor = selected ? Colors.white : VitalisColors.navBarInactive;
-    final labelColor = selected ? VitalisColors.primary : VitalisColors.navBarInactive;
 
     return Material(
       color: Colors.transparent,
-      child: InkWell(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        splashColor: VitalisColors.primary.withValues(alpha: 0.12),
         child: Center(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 2),
@@ -202,19 +186,6 @@ class _NavEntry extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(icon, size: selected ? 26 : 24, color: iconColor),
-                const SizedBox(height: 4),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: textTheme.labelSmall?.copyWith(
-                    color: labelColor,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 10,
-                    letterSpacing: 0.35,
-                    height: 1.1,
-                  ),
-                ),
               ],
             ),
           ),

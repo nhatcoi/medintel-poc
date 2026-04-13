@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:med_intel_client/l10n/app_localizations.dart';
 
 import '../../core/theme/vitalis_colors.dart';
 import '../../services/api_service.dart';
@@ -53,7 +54,8 @@ class _PrescriptionScanPageState extends State<PrescriptionScanPage> {
       await _performScan(bytes);
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = 'Không thể chọn ảnh: $e');
+      final l10n = AppLocalizations.of(context);
+      setState(() => _error = l10n.scanPickImageError(e.toString()));
     }
   }
 
@@ -120,6 +122,7 @@ class _PrescriptionScanPageState extends State<PrescriptionScanPage> {
   }
 
   Widget _buildBody() {
+    final l10n = AppLocalizations.of(context);
     if (_imageBytes == null) {
       return ScanEmptyState(
         onCamera: () => _pickImage(ImageSource.camera),
@@ -142,14 +145,14 @@ class _PrescriptionScanPageState extends State<PrescriptionScanPage> {
         const SizedBox(height: 16),
         if (_isScanning) ...[
           const SizedBox(height: 32),
-          const Center(
+          Center(
             child: Column(
               children: [
-                CircularProgressIndicator(color: VitalisColors.primary),
-                SizedBox(height: 16),
+                const CircularProgressIndicator(color: VitalisColors.primary),
+                const SizedBox(height: 16),
                 Text(
-                  'AI đang phân tích đơn thuốc...',
-                  style: TextStyle(
+                  l10n.scanAnalyzing,
+                  style: const TextStyle(
                     color: VitalisColors.onSurfaceVariant,
                     fontSize: 15,
                   ),
@@ -185,7 +188,7 @@ class _PrescriptionScanPageState extends State<PrescriptionScanPage> {
             child: TextButton.icon(
               onPressed: () => _performScan(_imageBytes!),
               icon: const Icon(Icons.refresh),
-              label: const Text('Thử lại'),
+              label: Text(l10n.scanRetry),
             ),
           ),
         ],
@@ -197,7 +200,7 @@ class _PrescriptionScanPageState extends State<PrescriptionScanPage> {
               child: OutlinedButton.icon(
                 onPressed: () => _pickImage(ImageSource.camera),
                 icon: const Icon(Icons.camera_alt_outlined, size: 18),
-                label: const Text('Chụp lại'),
+                label: Text(l10n.scanRetake),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: VitalisColors.primary,
                   side: const BorderSide(color: VitalisColors.primary),
@@ -213,7 +216,7 @@ class _PrescriptionScanPageState extends State<PrescriptionScanPage> {
               child: OutlinedButton.icon(
                 onPressed: () => _pickImage(ImageSource.gallery),
                 icon: const Icon(Icons.photo_library_outlined, size: 18),
-                label: const Text('Chọn ảnh'),
+                label: Text(l10n.scanPickImage),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: VitalisColors.primary,
                   side: const BorderSide(color: VitalisColors.primary),

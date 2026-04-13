@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:med_intel_client/l10n/app_localizations.dart';
 
 import '../../../core/theme/vitalis_colors.dart';
 import '../data/ai_chat_models.dart';
@@ -32,6 +33,7 @@ class _AssistantBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final text = Theme.of(context).textTheme;
 
     return Align(
@@ -42,7 +44,7 @@ class _AssistantBlock extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'MEDINTEL ASSISTANT',
+              l10n.aiAssistantBadge,
               style: text.labelSmall?.copyWith(
                 color: VitalisColors.primary,
                 fontWeight: FontWeight.w800,

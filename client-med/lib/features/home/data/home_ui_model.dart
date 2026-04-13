@@ -9,6 +9,7 @@ class HomeDoseItem {
     required this.dosageLabel,
     required this.timeLabel,
     required this.status,
+    this.medicationServerId,
     this.icon = Icons.medication_rounded,
   });
 
@@ -16,6 +17,8 @@ class HomeDoseItem {
   final String dosageLabel;
   final String timeLabel;
   final HomeDoseStatus status;
+  /// UUID thuốc trên server (đồng bộ treatment) — null/empty → chỉ ghi log trên cache/database sync.
+  final String? medicationServerId;
   final IconData icon;
 }
 

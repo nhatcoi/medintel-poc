@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:med_intel_client/l10n/app_localizations.dart';
 
 class TreatmentHeaderCard extends StatelessWidget {
   const TreatmentHeaderCard({
@@ -82,7 +83,7 @@ class TreatmentErrorBanner extends StatelessWidget {
           if (onRetry != null)
             TextButton(
               onPressed: onRetry,
-              child: const Text('Thử lại'),
+              child: Text(AppLocalizations.of(context).treatmentRetry),
             ),
         ],
       ),

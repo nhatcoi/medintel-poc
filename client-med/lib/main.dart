@@ -3,9 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_intel_client/app/router.dart';
-import 'package:med_intel_client/core/constants/app_constants.dart';
 import 'package:med_intel_client/core/theme/app_theme.dart';
+import 'package:med_intel_client/l10n/app_localizations.dart';
 import 'package:med_intel_client/providers/display_preferences_provider.dart';
+import 'package:med_intel_client/providers/locale_preferences_provider.dart';
 import 'package:med_intel_client/providers/shared_preferences_provider.dart';
 import 'package:med_intel_client/services/notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -60,11 +61,15 @@ class _MedIntelAppState extends ConsumerState<MedIntelApp> {
   @override
   Widget build(BuildContext context) {
     final display = ref.watch(displayPreferencesProvider);
+    final appLang = ref.watch(appLocaleProvider);
 
     return MaterialApp.router(
-      title: AppConstants.appName,
+      onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
       theme: AppTheme.light(fontId: display.fontId),
       routerConfig: _router,
+      locale: Locale(appLang),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) {
         final mq = MediaQuery.of(context);
         return MediaQuery(

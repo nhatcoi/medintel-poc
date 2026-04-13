@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: medintel-postgres-orm
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: medintel
+      POSTGRES_PASSWORD: medintel
+      POSTGRES_DB: medintel_orm
+    ports:
+      - "5432:5432"
+    volumes:
+      - medintel_pgdata_orm:/var/lib/postgresql/data
+
+volumes:
+  medintel_pgdata_orm:

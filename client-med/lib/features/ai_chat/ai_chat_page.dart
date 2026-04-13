@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:med_intel_client/l10n/app_localizations.dart';
 
 import '../../core/theme/vitalis_colors.dart';
 import '../../providers/local_medintel_provider.dart';
@@ -30,6 +31,8 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
   bool _isTyping = false;
   /// Nối tiếp phiên chat đã lưu trên server (POST /chat/message trả về).
   String? _chatSessionId;
+  /// Gợi ý từ GET /chat/welcome-hints; null = chưa tải hoặc lỗi (dùng fallback l10n).
+  List<String>? _welcomeHintsFromApi;
 
   @override
   void initState() {
@@ -37,6 +40,28 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
     _composer = TextEditingController();
     _scroll = ScrollController();
     _repo = ChatRepository(ApiService());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadWelcomeHints());
+  }
+
+  Future<void> _loadWelcomeHints() async {
+    final id = ref.read(authProvider).user?.id;
+    if (id == null || id.trim().isEmpty) return;
+    final hints = await _repo.fetchWelcomeHints(id);
+    if (!mounted) return;
+    setState(() {
+      _welcomeHintsFromApi = hints.isNotEmpty ? hints : null;
+    });
+  }
+
+  List<String> _rotatingPhrases(AppLocalizations l10n) {
+    if (_welcomeHintsFromApi != null && _welcomeHintsFromApi!.isNotEmpty) {
+      return _welcomeHintsFromApi!;
+    }
+    return [
+      l10n.aiChatRotatingFallback0,
+      l10n.aiChatRotatingFallback1,
+      l10n.aiChatRotatingFallback2,
+    ];
   }
 
   @override
@@ -93,10 +118,11 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
       });
     } catch (_) {
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context);
       setState(() {
         _isTyping = false;
-        _messages.add(const AiChatAssistantTurn(
-          body: 'Xin lỗi, không thể kết nối. Vui lòng thử lại.',
+        _messages.add(AiChatAssistantTurn(
+          body: l10n.aiConnectionError,
           timeLabel: '',
         ));
       });
@@ -138,6 +164,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return ColoredBox(
       color: VitalisColors.background,
       child: Column(
@@ -149,7 +176,10 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
               controller: _scroll,
               padding: const EdgeInsets.only(bottom: 16),
               children: [
-                const AiChatWelcomeBlock(),
+                AiChatWelcomeBlock(
+                  showTypewriter: _messages.isEmpty,
+                  rotatingPhrases: _rotatingPhrases(l10n),
+                ),
                 const SizedBox(height: 16),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),

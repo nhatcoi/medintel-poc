@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:med_intel_client/l10n/app_localizations.dart';
 
 import '../../providers/providers.dart';
 import '../treatment/data/treatment_provider.dart';
@@ -24,6 +25,7 @@ class _MedicationPageState extends ConsumerState<MedicationPage> {
     final profileId = auth.user?.id;
     if (profileId == null || profileId.isEmpty) return;
     await ref.read(treatmentProvider.notifier).loadMedications(profileId);
+    await ref.read(treatmentProvider.notifier).loadSummary(profileId);
   }
 
   Future<void> _addMedicationDialog() async {
@@ -37,8 +39,9 @@ class _MedicationPageState extends ConsumerState<MedicationPage> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) {
+        final l10n = AppLocalizations.of(ctx);
         return AlertDialog(
-          title: const Text('Thêm thuốc mới'),
+          title: Text(l10n.medicationAddTitle),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -47,34 +50,34 @@ class _MedicationPageState extends ConsumerState<MedicationPage> {
                 TextField(
                   controller: nameCtrl,
                   textCapitalization: TextCapitalization.words,
-                  decoration: const InputDecoration(
-                    labelText: 'Tên thuốc',
-                    hintText: 'Ví dụ: Metformin',
+                  decoration: InputDecoration(
+                    labelText: l10n.medicationDrugName,
+                    hintText: l10n.medicationDrugNameHint,
                   ),
                 ),
                 const SizedBox(height: 10),
                 TextField(
                   controller: doseCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Liều dùng',
-                    hintText: 'Ví dụ: 500mg x 1 viên',
+                  decoration: InputDecoration(
+                    labelText: l10n.medicationDosage,
+                    hintText: l10n.medicationDosageHint,
                   ),
                 ),
                 const SizedBox(height: 10),
                 TextField(
                   controller: scheduleCtrl,
                   keyboardType: TextInputType.datetime,
-                  decoration: const InputDecoration(
-                    labelText: 'Giờ uống (HH:MM)',
-                    helperText: 'Định dạng 24h, ví dụ 08:00',
+                  decoration: InputDecoration(
+                    labelText: l10n.medicationSchedule,
+                    helperText: l10n.medicationScheduleHelper,
                   ),
                 ),
               ],
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Hủy')),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Lưu thuốc')),
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.genericCancel)),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l10n.medicationSave)),
           ],
         );
       },
@@ -90,16 +93,19 @@ class _MedicationPageState extends ConsumerState<MedicationPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final state = ref.watch(treatmentProvider);
     final activeCount = state.items.where((m) => (m.status ?? 'active') == 'active').length;
+    final summary7 = state.summary;
+    final summary30 = state.summary30;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Quản lý thuốc'),
+        title: Text(l10n.medicationListTitle),
         actions: [
           IconButton(
             onPressed: _addMedicationDialog,
             icon: const Icon(Icons.add),
-            tooltip: 'Thêm thuốc',
+            tooltip: l10n.medicationAddTooltip,
           ),
         ],
       ),
@@ -108,20 +114,57 @@ class _MedicationPageState extends ConsumerState<MedicationPage> {
         child: ListView(
           children: [
             TreatmentHeaderCard(
-              title: 'Danh sách thuốc điều trị',
-              subtitle: 'Theo dõi thuốc đang dùng mỗi ngày',
+              title: l10n.medicationHeaderTitle,
+              subtitle: l10n.medicationHeaderSubtitle,
               value: '$activeCount',
               icon: Icons.medication_liquid_outlined,
             ),
+            if (summary7 != null)
+              TreatmentHeaderCard(
+                title: 'Tuân thủ 7 ngày',
+                subtitle: 'Tỉ lệ uống đúng/đủ',
+                value: '${(summary7.complianceRate * 100).toStringAsFixed(0)}%',
+                icon: Icons.insights_outlined,
+              ),
+            if (summary30 != null)
+              TreatmentHeaderCard(
+                title: 'Tuân thủ 30 ngày',
+                subtitle: 'Xu hướng dài hạn',
+                value: '${(summary30.complianceRate * 100).toStringAsFixed(0)}%',
+                icon: Icons.timeline_outlined,
+              ),
+            if (state.nextDose != null)
+              Card(
+                margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                child: ListTile(
+                  leading: const Icon(Icons.alarm),
+                  title: const Text('Liều kế tiếp'),
+                  subtitle: Text(
+                    '${state.nextDose!.medicationName} • ${state.nextDose!.scheduledDatetime.toLocal()}',
+                  ),
+                ),
+              ),
+            if (state.missedDoses.isNotEmpty)
+              Card(
+                margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                color: Theme.of(context).colorScheme.errorContainer,
+                child: ListTile(
+                  leading: const Icon(Icons.warning_amber_outlined),
+                  title: const Text('Liều có nguy cơ quên'),
+                  subtitle: Text(
+                    '${state.missedDoses.length} liều quá hạn cần xử lý',
+                  ),
+                ),
+              ),
             if (state.loading) const LinearProgressIndicator(),
             if (state.error != null)
               TreatmentErrorBanner(message: state.error!, onRetry: _reload),
             if (state.items.isEmpty)
               TreatmentEmptyCard(
                 icon: Icons.medication_outlined,
-                title: 'Chưa có thuốc trong hồ sơ',
-                description: 'Nhấn nút thêm để tạo lịch uống và theo dõi tuân thủ.',
-                ctaLabel: 'Thêm thuốc',
+                title: l10n.medicationEmptyTitle,
+                description: l10n.medicationEmptyDescription,
+                ctaLabel: l10n.medicationEmptyCta,
                 onTapCta: _addMedicationDialog,
               ),
             for (final m in state.items)
@@ -151,10 +194,10 @@ class _MedicationPageState extends ConsumerState<MedicationPage> {
                                     status: v,
                                   );
                             },
-                            itemBuilder: (_) => const [
-                              PopupMenuItem(value: 'active', child: Text('Đang dùng')),
-                              PopupMenuItem(value: 'paused', child: Text('Tạm dừng')),
-                              PopupMenuItem(value: 'stopped', child: Text('Ngưng')),
+                            itemBuilder: (_) => [
+                              PopupMenuItem(value: 'active', child: Text(l10n.medicationStatusActive)),
+                              PopupMenuItem(value: 'paused', child: Text(l10n.medicationStatusPaused)),
+                              PopupMenuItem(value: 'stopped', child: Text(l10n.medicationStatusStopped)),
                             ],
                           ),
                         ],
@@ -172,11 +215,11 @@ class _MedicationPageState extends ConsumerState<MedicationPage> {
                         runSpacing: 8,
                         children: [
                           TreatmentInfoChip(
-                            label: m.scheduleTimes.isEmpty ? 'Chưa có giờ uống' : m.scheduleTimes.join(', '),
+                            label: m.scheduleTimes.isEmpty ? l10n.medicationNoDoseTime : m.scheduleTimes.join(', '),
                             icon: Icons.schedule_outlined,
                           ),
                           TreatmentInfoChip(
-                            label: _statusLabel(m.status),
+                            label: _statusLabel(m.status, l10n),
                             icon: Icons.health_and_safety_outlined,
                           ),
                         ],
@@ -191,15 +234,15 @@ class _MedicationPageState extends ConsumerState<MedicationPage> {
     );
   }
 
-  String _statusLabel(String? status) {
+  String _statusLabel(String? status, AppLocalizations l10n) {
     switch (status) {
       case 'paused':
-        return 'Tạm dừng';
+        return l10n.medicationStatusPaused;
       case 'stopped':
-        return 'Ngưng';
+        return l10n.medicationStatusStopped;
       case 'active':
       default:
-        return 'Đang dùng';
+        return l10n.medicationStatusActive;
     }
   }
 }

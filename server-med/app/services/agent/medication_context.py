@@ -21,7 +21,7 @@ def build_medication_context_block(db: Session, profile_id: uuid.UUID) -> str:
     if not meds:
         return (
             "### Thuốc đã lưu trên server (đơn quét / điều trị)\n"
-            "Chưa có bản ghi. Gợi ý: user có thể chỉ có danh sách cục bộ trên app."
+            "Chưa có bản ghi. Gợi ý: thuốc có thể chưa đồng bộ vào database từ app."
         )
     lines: list[str] = [
         "### Thuốc đã lưu trên server (đơn quét / điều trị)",

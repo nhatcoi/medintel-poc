@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:med_intel_client/l10n/app_localizations.dart';
 
 import '../../providers/providers.dart';
 import '../../services/notification_service.dart';
@@ -36,11 +37,12 @@ class _ReminderPageState extends ConsumerState<ReminderPage> {
           status: status,
         );
     if (mounted) {
+      final l10n = AppLocalizations.of(context);
       final msg = switch (status) {
-        'taken' => 'Đã ghi nhận: ${med.name} đã uống đúng liều',
-        'late' => 'Đã ghi nhận: ${med.name} uống trễ',
-        'missed' => 'Đã ghi nhận: bỏ lỡ ${med.name}',
-        _ => 'Đã ghi nhận ${med.name}: $status',
+        'taken' => l10n.reminderLoggedTaken(med.name),
+        'late' => l10n.reminderLoggedLate(med.name),
+        'missed' => l10n.reminderLoggedMissed(med.name),
+        _ => l10n.reminderLoggedGeneric(med.name, status),
       };
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(msg)),
@@ -50,27 +52,28 @@ class _ReminderPageState extends ConsumerState<ReminderPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final state = ref.watch(treatmentProvider);
     final reminderCount = state.items.where((m) => m.scheduleTimes.isNotEmpty).length;
     return Scaffold(
-      appBar: AppBar(title: const Text('Nhắc thuốc hôm nay')),
+      appBar: AppBar(title: Text(l10n.reminderTitle)),
       body: RefreshIndicator(
         onRefresh: _reload,
         child: ListView(
           children: [
             TreatmentHeaderCard(
-              title: 'Lịch thuốc hôm nay',
-              subtitle: 'Ưu tiên các liều cần uống trong ngày',
+              title: l10n.reminderHeaderTitle,
+              subtitle: l10n.reminderHeaderSubtitle,
               value: '$reminderCount',
               icon: Icons.alarm_on_outlined,
             ),
             if (state.loading) const LinearProgressIndicator(),
             if (state.error != null) TreatmentErrorBanner(message: state.error!, onRetry: _reload),
             if (state.items.isEmpty)
-              const TreatmentEmptyCard(
+              TreatmentEmptyCard(
                 icon: Icons.notifications_paused_outlined,
-                title: 'Chưa có lịch thuốc để nhắc',
-                description: 'Hãy thêm thuốc và giờ uống ở màn Quản lý thuốc.',
+                title: l10n.reminderEmptyTitle,
+                description: l10n.reminderEmptyDescription,
               ),
             for (final med in state.items)
               Card(
@@ -89,7 +92,7 @@ class _ReminderPageState extends ConsumerState<ReminderPage> {
                             ),
                           ),
                           TreatmentInfoChip(
-                            label: med.scheduleTimes.isEmpty ? 'Không giờ cố định' : 'Có lịch',
+                            label: med.scheduleTimes.isEmpty ? l10n.reminderScheduleFlexible : l10n.reminderScheduleFixed,
                             icon: Icons.schedule_outlined,
                           ),
                         ],
@@ -105,8 +108,8 @@ class _ReminderPageState extends ConsumerState<ReminderPage> {
                               icon: Icons.access_time_outlined,
                             ),
                           if (med.scheduleTimes.isEmpty)
-                            const TreatmentInfoChip(
-                              label: 'Chưa có giờ uống',
+                            TreatmentInfoChip(
+                              label: l10n.reminderNoDoseTime,
                               icon: Icons.info_outline,
                             ),
                         ],
@@ -118,26 +121,26 @@ class _ReminderPageState extends ConsumerState<ReminderPage> {
                         children: [
                           FilledButton(
                             onPressed: () async {
-                              final t = med.scheduleTimes.isNotEmpty ? med.scheduleTimes.first : 'bây giờ';
+                              final t = med.scheduleTimes.isNotEmpty ? med.scheduleTimes.first : l10n.reminderNow;
                               await NotificationService.showMedicationReminder(
                                 id: med.medicationId.hashCode,
-                                title: 'Nhắc uống thuốc',
+                                title: l10n.reminderNotifyTitle,
                                 body: '${med.name} • $t',
                               );
                             },
-                            child: const Text('Nhắc ngay'),
+                            child: Text(l10n.reminderNotifyNow),
                           ),
                           FilledButton.tonal(
                             onPressed: () => _log(med, 'taken'),
-                            child: const Text('Đã uống'),
+                            child: Text(l10n.reminderTaken),
                           ),
                           FilledButton.tonal(
                             onPressed: () => _log(med, 'late'),
-                            child: const Text('Uống trễ'),
+                            child: Text(l10n.reminderLate),
                           ),
                           FilledButton.tonal(
                             onPressed: () => _log(med, 'missed'),
-                            child: const Text('Bỏ lỡ'),
+                            child: Text(l10n.reminderMissed),
                           ),
                         ],
                       ),

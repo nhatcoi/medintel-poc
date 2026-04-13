@@ -1,0 +1,286 @@
+{
+  "@@locale": "vi",
+  "appTitle": "MedIntel",
+  "navHome": "LỊCH THUỐC",
+  "navScan": "QUÉT",
+  "navChat": "CHAT",
+  "navHistory": "LỊCH SỬ",
+  "navCare": "CHĂM SÓC",
+  "genericYou": "Bạn",
+  "genericCancel": "Hủy",
+  "gettingStartedHeadline": "Cùng hàng triệu người\nđang chủ động quản lý\nthuốc của mình",
+  "gettingStartedCta": "BẮT ĐẦU",
+  "gettingStartedAccountPrompt": "Đã có tài khoản? ",
+  "gettingStartedLogIn": "Đăng nhập",
+  "gettingStartedLegal": "Tiếp tục nghĩa là bạn đồng ý Điều khoản và\nđã đọc Chính sách quyền riêng tư",
+  "patientSetupWelcome": "Hãy làm quen nhé!\nBạn tên gì?",
+  "patientSetupFirstName": "Tên*",
+  "patientSetupLastName": "Họ*",
+  "patientSetupNext": "Tiếp theo",
+  "errorConnectionRefused": "Không thể kết nối server. Vui lòng kiểm tra kết nối.",
+  "errorSaveFailed": "Không thể lưu thông tin. Vui lòng thử lại.",
+  "settingsTitle": "Cài đặt",
+  "settingsDeleteAllTitle": "Xóa toàn bộ dữ liệu?",
+  "settingsDeleteAllBody": "Thao tác này sẽ xóa dữ liệu đồng bộ database trên thiết bị (thuốc, log, cấu hình hiển thị, thông tin onboarding).",
+  "settingsDeleteData": "Xóa dữ liệu",
+  "settingsDisplaySection": "Hiển thị",
+  "settingsDisplaySubtitle": "Font và cỡ chữ áp dụng cho toàn bộ ứng dụng.",
+  "settingsFont": "Font chữ",
+  "settingsTextScale": "Cỡ chữ",
+  "settingsPreview": "Xem trước",
+  "settingsPreviewSample": "Đây là đoạn văn mẫu để bạn chỉnh font và cỡ chữ cho dễ đọc hơn.",
+  "settingsDebugSection": "Gỡ lỗi",
+  "settingsDebugSubtitle": "Toàn bộ state đồng bộ database (thuốc, log liều, ghi chú, auth, prefs) — dùng để trace.",
+  "settingsClearLocalData": "Xóa dữ liệu database và quay về Welcome",
+  "settingsLanguageSection": "Ngôn ngữ",
+  "settingsLanguageSubtitle": "Chọn Tiếng Việt hoặc English cho toàn bộ ứng dụng.",
+  "settingsLanguageVi": "Tiếng Việt",
+  "settingsLanguageEn": "English",
+  "medicationAddTitle": "Thêm thuốc mới",
+  "medicationDrugName": "Tên thuốc",
+  "medicationDrugNameHint": "Ví dụ: Metformin",
+  "medicationDosage": "Liều dùng",
+  "medicationDosageHint": "Ví dụ: 500mg x 1 viên",
+  "medicationSchedule": "Giờ uống (HH:MM)",
+  "medicationScheduleHelper": "Định dạng 24h, ví dụ 08:00",
+  "medicationSave": "Lưu thuốc",
+  "medicationListTitle": "Quản lý thuốc",
+  "medicationAddTooltip": "Thêm thuốc",
+  "medicationHeaderTitle": "Danh sách thuốc điều trị",
+  "medicationHeaderSubtitle": "Theo dõi thuốc đang dùng mỗi ngày",
+  "medicationEmptyTitle": "Chưa có thuốc trong hồ sơ",
+  "medicationEmptyDescription": "Nhấn nút thêm để tạo lịch uống và theo dõi tuân thủ.",
+  "medicationEmptyCta": "Thêm thuốc",
+  "medicationStatusActive": "Đang dùng",
+  "medicationStatusPaused": "Tạm dừng",
+  "medicationStatusStopped": "Ngưng",
+  "medicationNoDoseTime": "Chưa có giờ uống",
+  "reminderTitle": "Nhắc thuốc hôm nay",
+  "reminderHeaderTitle": "Lịch thuốc hôm nay",
+  "reminderHeaderSubtitle": "Ưu tiên các liều cần uống trong ngày",
+  "reminderEmptyTitle": "Chưa có lịch thuốc để nhắc",
+  "reminderEmptyDescription": "Hãy thêm thuốc và giờ uống ở màn Quản lý thuốc.",
+  "reminderScheduleFlexible": "Không giờ cố định",
+  "reminderScheduleFixed": "Có lịch",
+  "reminderNoDoseTime": "Chưa có giờ uống",
+  "reminderNotifyTitle": "Nhắc uống thuốc",
+  "reminderNotifyNow": "Nhắc ngay",
+  "reminderNow": "bây giờ",
+  "reminderTaken": "Đã uống",
+  "reminderLate": "Uống trễ",
+  "reminderMissed": "Bỏ lỡ",
+  "reminderLoggedTaken": "Đã ghi nhận: {name} đã uống đúng liều",
+  "@reminderLoggedTaken": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "reminderLoggedLate": "Đã ghi nhận: {name} uống trễ",
+  "@reminderLoggedLate": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "reminderLoggedMissed": "Đã ghi nhận: bỏ lỡ {name}",
+  "@reminderLoggedMissed": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "reminderLoggedGeneric": "Đã ghi nhận {name}: {status}",
+  "@reminderLoggedGeneric": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "status": {"type": "String"}
+    }
+  },
+  "homeTimeForMedicine": "ĐẾN GIỜ UỐNG THUỐC",
+  "homeScheduledFor": "Hẹn lúc {time}",
+  "@homeScheduledFor": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "homeMarkAsTaken": "Đánh dấu đã uống",
+  "homeSnooze": "Hoãn",
+  "homeSkip": "Bỏ qua",
+  "homeUpcomingToday": "SẮP TỚI HÔM NAY",
+  "homeProTipTitle": "Mẹo nhỏ",
+  "homeProTipBody": "Uống thuốc cùng bữa ăn giúp giảm kích ứng dạ dày và dễ duy trì thói quen hơn.",
+  "homeAfterDoseTaken": "Đã ghi nhận đã uống: {name}",
+  "@homeAfterDoseTaken": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "homeAfterDoseSkipped": "Đã ghi nhận bỏ qua liều: {name}",
+  "@homeAfterDoseSkipped": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "homeServerLogFailed": "Đã lưu trên máy; chưa đồng bộ được server.",
+  "homeSyncFailed": "Không tải được danh sách thuốc từ server.",
+  "homeQuickActionsTitle": "Thao tác nhanh",
+  "homeSubtitleDosageTime": "{dosage} • {time}",
+  "@homeSubtitleDosageTime": {
+    "placeholders": {
+      "dosage": {"type": "String"},
+      "time": {"type": "String"}
+    }
+  },
+  "homeEmptyTitle": "Chưa có lịch thuốc",
+  "homeEmptyBody": "Thêm thuốc bằng Quét đơn hoặc nhờ trợ lý AI ghi nhận (lưu trên máy bạn). Đồng bộ tài khoản sẽ bổ sung sau.",
+  "doseStatusTaken": "ĐÃ UỐNG",
+  "doseStatusMissed": "BỎ LỠ",
+  "doseStatusUpcoming": "SẮP TỚI",
+  "doseStatusYesterday": "Hôm qua",
+  "scheduleSectionTitle": "LỊCH THUỐC HÔM NAY",
+  "scheduleViewCalendar": "Xem lịch",
+  "scheduleAlreadyRecorded": "Đã ghi nhận",
+  "scheduleMarkAsTaken": "Đánh dấu đã uống",
+  "scheduleReschedule": "Đổi lịch",
+  "scheduleMarkTaken": "Đã uống",
+  "adherenceTitle": "Tuân thủ điều trị",
+  "adherenceNoData": "Chưa có dữ liệu tuân thủ.",
+  "adherenceTotalDoses": "Tổng liều ({days} ngày)",
+  "@adherenceTotalDoses": {
+    "placeholders": {
+      "days": {"type": "int"}
+    }
+  },
+  "adherenceTakenLabel": "Đã uống",
+  "adherenceMissedLabel": "Bỏ lỡ",
+  "adherenceSkippedLabel": "Bỏ qua",
+  "adherenceLateLabel": "Uống trễ",
+  "scanTitle": "Quét đơn thuốc",
+  "scanTooltipDismiss": "Huỷ",
+  "scanAnalyzing": "AI đang phân tích đơn thuốc...",
+  "scanRetry": "Thử lại",
+  "scanRetake": "Chụp lại",
+  "scanPickImage": "Chọn ảnh",
+  "scanPickImageError": "Không thể chọn ảnh: {error}",
+  "@scanPickImageError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "scanEmptyTitle": "Quét đơn thuốc bằng AI",
+  "scanEmptyBody": "Chụp ảnh hoặc chọn từ thư viện. AI sẽ tự động nhận diện thuốc, liều dùng và tạo lịch uống.",
+  "scanCapturePrescription": "Chụp ảnh đơn thuốc",
+  "scanFromGallery": "Chọn từ thư viện",
+  "scanResultTitle": "Kết quả phân tích",
+  "scanResultSaved": "Đã lưu đơn thuốc ({count} thuốc)",
+  "@scanResultSaved": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "scanLabelDoctor": "Bác sĩ",
+  "scanLabelPatient": "Bệnh nhân",
+  "scanLabelDate": "Ngày",
+  "scanMedsDetected": "Thuốc (đã nhận diện {count})",
+  "@scanMedsDetected": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "scanNoMedsFound": "Không phát hiện thuốc nào. Vui lòng thử chụp lại rõ hơn.",
+  "scanSchedulePrefix": "Lịch uống: ",
+  "treatmentRetry": "Thử lại",
+  "notificationChannelName": "Nhắc uống thuốc",
+  "notificationChannelDescription": "Thông báo nhắc uống thuốc hằng ngày",
+  "aiAppBarTitle": "MedIntel",
+  "aiWelcomeGreeting": "Xin chào, {name}",
+  "@aiWelcomeGreeting": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "aiWelcomeBody": "Trợ lý Meditel",
+  "aiAssistantBadge": "TRỢ LÝ MEDINTEL",
+  "aiComposerHint": "Hỏi MedIntel bất cứ điều gì…",
+  "aiConnectionError": "Xin lỗi, không thể kết nối. Vui lòng thử lại.",
+  "aiSuggestSectionApp": "Trong ứng dụng",
+  "aiSuggestSectionKnowledge": "Kiến thức & tra cứu",
+  "aiSuggestSectionOther": "Khác",
+  "aiChatRotatingCaption": "Vì sức khỏe của bạn",
+  "aiChatRotatingFallback0": "Hôm nay bạn có khỏe không?",
+  "aiChatRotatingFallback1": "Thử nhắn \"Tôi vừa uống thuốc\" để ghi nhận liều, hoặc hỏi tôi về thuốc.",
+  "aiChatRotatingFallback2": "Cần thêm toa? Quét đơn ở tab Quét rồi trò chuyện tiếp tại đây.",
+  "quickScanTitle": "Quét đơn mới",
+  "quickScanSubtitle": "Thêm thuốc bằng AI quét đơn",
+  "quickChipChat": "Chat AI",
+  "quickChipMedication": "Thuốc",
+  "quickChipReminder": "Nhắc nhở",
+  "adherenceHeroTodayProgress": "TIẾN ĐỘ HÔM NAY",
+  "adherenceHeroTakenToday": "  ĐÃ UỐNG HÔM NAY",
+  "adherenceHeroEmptyHint": "Hãy thêm thuốc để bắt đầu theo dõi.",
+  "adherenceHeroProgressHint": "Khởi đầu tốt — tiếp tục duy trì đều đặn để đạt mục tiêu hôm nay.",
+  "careMonitoringLabel": "THEO DÕI",
+  "careMedicationsTitle": "Thuốc",
+  "careMedicationsEmpty": "Chưa có thuốc trong danh sách database. Thêm qua Quét đơn hoặc AI Chat.",
+  "careTodayAdherence": "Tuân thủ hôm nay",
+  "careDosesLogged": "{taken} / {total} LIỀU ĐÃ GHI",
+  "@careDosesLogged": {
+    "placeholders": {
+      "taken": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "careDosesNoSchedule": "CHƯA CÓ LỊCH LIỀU",
+  "careWeeklyScore": "Điểm tuần",
+  "careRecentAlerts": "Cảnh báo gần đây",
+  "careAlertsEmpty": "Không có cảnh báo gần đây (theo dữ liệu database).",
+  "careVitalsDisconnected": "CHƯA KẾT NỐI",
+  "careVitalsSubtitle": "Sinh hiệu — tích hợp thiết bị sau",
+  "careOpenAiChat": "MỞ CHAT AI",
+  "weeklyCaptionGood": "TIẾN ĐỘ TỐT",
+  "weeklyCaptionOk": "ĐANG ỔN ĐỊNH",
+  "weeklyCaptionWatch": "CẦN THEO DÕI THÊM",
+  "weeklyCaptionNoData": "CHƯA CÓ DỮ LIỆU TUẦN",
+  "dashMedFallback": "Thuốc",
+  "dashTimeInDay": "Trong ngày",
+  "dashTimeAm": "{hour}:{minute} SA",
+  "@dashTimeAm": {
+    "placeholders": {
+      "hour": {"type": "String"},
+      "minute": {"type": "String"}
+    }
+  },
+  "dashTimePm": "{hour12}:{minute} CH",
+  "@dashTimePm": {
+    "placeholders": {
+      "hour12": {"type": "String"},
+      "minute": {"type": "String"}
+    }
+  },
+  "dashUserFallback": "Người dùng",
+  "dashAlertMissedTitle": "{patientName} bỏ lỡ / bỏ qua liều",
+  "@dashAlertMissedTitle": {
+    "placeholders": {
+      "patientName": {"type": "String"}
+    }
+  },
+  "dashAlertMissedSubtitle": "{medName} • hôm nay ({note})",
+  "@dashAlertMissedSubtitle": {
+    "placeholders": {
+      "medName": {"type": "String"},
+      "note": {"type": "String"}
+    }
+  },
+  "dashAlertCareNote": "Ghi chú chăm sóc",
+  "dashTodayLocalNote": "dữ liệu database",
+  "localDataTitle": "Dữ liệu database (JSON)",
+  "localDataRefresh": "Làm mới",
+  "localDataRefreshNote": "Tự làm mới mỗi {seconds}s (đọc lại state đồng bộ database / cache thiết bị).",
+  "@localDataRefreshNote": {
+    "placeholders": {
+      "seconds": {"type": "int"}
+    }
+  },
+  "authTitle": "Đăng nhập",
+  "authBody": "auth — JWT login",
+  "placeholderScanTitle": "Quét đơn thuốc",
+  "placeholderScanBody": "prescription_scan — camera + OCR"
+}

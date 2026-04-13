@@ -12,7 +12,7 @@ description: >-
 | Khu vực | Đường dẫn | Vai trò |
 |---------|-----------|---------|
 | **Agent** | `app/services/agent/` | `registry.py` (ALLOWED_TOOLS), `tool_validation.py`, `medication_context.py` |
-| **Chat** | `app/services/chat_service.py` | Luồng LLM + lưu phiên; `preview_chat_message` (dry-run) |
+| **Chat** | `app/services/chat/` (pipeline, context, persistence, …) | Luồng LLM + lưu phiên; `preview_chat_message` (dry-run) |
 | **LLM** | `ai/chatbot/prompts.py`, `ai/chatbot/llm_client.py` | System prompt + gọi API + parse JSON |
 | **Thuốc** | `app/repositories/medication_repository.py` | Đọc `medications` theo `profile_id` (qua medical_records → treatment_periods) |
 | **Schema** | `app/schemas/chat.py`, `treatment.py`, `agent_tools.py` | Pydantic request/response |

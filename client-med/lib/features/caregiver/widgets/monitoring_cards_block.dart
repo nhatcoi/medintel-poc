@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:med_intel_client/l10n/app_localizations.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/vitalis_colors.dart';
@@ -119,6 +120,7 @@ class _AdherenceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final text = Theme.of(context).textTheme;
     final pct = (fraction * 100).round();
 
@@ -128,7 +130,7 @@ class _AdherenceCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            "Today's Adherence",
+            l10n.careTodayAdherence,
             style: text.titleSmall?.copyWith(
               color: VitalisColors.neutral,
               fontWeight: FontWeight.w600,
@@ -146,8 +148,8 @@ class _AdherenceCard extends StatelessWidget {
           ),
           Text(
             dosesTotal <= 0
-                ? 'CHƯA CÓ LỊCH LIỀU'
-                : '$dosesTaken / $dosesTotal LIỀU ĐÃ GHI',
+                ? l10n.careDosesNoSchedule
+                : l10n.careDosesLogged(dosesTaken, dosesTotal),
             textAlign: TextAlign.center,
             style: text.labelMedium?.copyWith(
               color: VitalisColors.statusSuccess,
@@ -219,6 +221,7 @@ class _WeeklyScoreCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final text = Theme.of(context).textTheme;
     final pct = (fraction * 100).round();
 
@@ -230,7 +233,7 @@ class _WeeklyScoreCard extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            'Weekly Score',
+            l10n.careWeeklyScore,
             style: text.titleSmall?.copyWith(
               color: Colors.white.withValues(alpha: 0.9),
               fontWeight: FontWeight.w600,

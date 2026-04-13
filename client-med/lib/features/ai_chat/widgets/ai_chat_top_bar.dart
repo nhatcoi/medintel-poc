@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:med_intel_client/l10n/app_localizations.dart';
 
 import '../../../core/theme/vitalis_colors.dart';
 
@@ -45,7 +46,7 @@ class AiChatTopBar extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Text('MedIntel', style: titleStyle),
+              child: Text(AppLocalizations.of(context).aiAppBarTitle, style: titleStyle),
             ),
             IconButton(
               onPressed: () => context.push('/settings'),

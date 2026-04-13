@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import date, datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Date, DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -11,6 +12,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database.session import Base, GUID
 
 from app.models.mixins import TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.patient_agent_context import PatientAgentContext
 
 
 class Profile(Base, TimestampMixin):
@@ -33,6 +37,12 @@ class Profile(Base, TimestampMixin):
         "ChatSession", back_populates="profile", cascade="all, delete-orphan"
     )
     chat_messages: Mapped[list["ChatMessage"]] = relationship("ChatMessage", back_populates="profile")
+    agent_knowledge_doc: Mapped["PatientAgentContext | None"] = relationship(
+        "PatientAgentContext",
+        back_populates="profile",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
 
 
 class Device(Base, TimestampMixin):

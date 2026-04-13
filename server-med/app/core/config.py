@@ -1,3 +1,4 @@
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -10,15 +11,34 @@ class Settings(BaseSettings):
     jwt_secret: str = "change-me-in-production"
     jwt_algorithm: str = "HS256"
     jwt_exp_hours: int = 72
-    llm_base_url: str = "https://rftzycu.9router.com/v1/chat/completions"
-    llm_api_key: str = ""
-    llm_model: str = "combo-1"
+    # Groq OpenAI-compatible: https://console.groq.com/docs/openai
+    llm_base_url: str = "https://api.groq.com/openai/v1/chat/completions"
+    llm_api_key: str = Field(
+        default="",
+        validation_alias=AliasChoices("LLM_API_KEY", "GROQ_API_KEY"),
+    )
+    # Chat agent (text). Ví dụ: llama-3.3-70b-versatile, llama-3.1-8b-instant
+    llm_model: str = "llama-3.3-70b-versatile"
+    # Quét đơn (vision). Groq: meta-llama/llama-4-scout-17b-16e-instruct
+    llm_vision_model: str = "meta-llama/llama-4-scout-17b-16e-instruct"
+    # Giới hạn token sinh — giảm latency (reply JSON ngắn). 0 = không gửi, để provider tự quyết.
+    llm_max_tokens: int = 768
+    # Số lượt user/assistant gần nhất đưa vào prompt (càng ít càng nhanh).
+    chat_history_limit: int = 8
+    # Markdown ngữ cảnh agent (`patient_agent_context`): làm mới nếu bản lưu quá cũ (giây).
+    patient_agent_context_max_age_seconds: int = 3600
+    # Giới hạn độ dài khi render markdown từ snapshot (tránh TEXT quá lớn).
+    patient_agent_context_max_markdown_chars: int = 12000
     # Embedding (sentence-transformers local model)
     embedding_model: str = "paraphrase-multilingual-MiniLM-L12-v2"
     embedding_dim: int = 384
+    # true = nạp model khi uvicorn start (request đầu không chờ load BerT). Tắt trong pytest.
+    embedding_warmup_on_startup: bool = True
     # RAG
-    rag_top_k: int = 8
+    rag_top_k: int = 6
     rag_min_similarity: float = 0.72  # ngưỡng coi RAG là "đủ tốt"; dưới ngưỡng → fallback Agent 2
+    # Giới hạn độ dài block RAG ghép vào system prompt — context ngắn hơn → LLM xử lý nhanh hơn.
+    rag_context_max_chars: int = 3800
 
     # CAG (Cache-Augmented Generation)
     cag_enabled: bool = True
@@ -30,6 +50,7 @@ class Settings(BaseSettings):
     tavily_api_key: str = ""
     tavily_max_results: int = 5
     tavily_enabled: bool = True
+    tavily_timeout_seconds: float = 12.0
     tavily_trusted_domains: list[str] = [
         "drugs.com",
         "medlineplus.gov",
