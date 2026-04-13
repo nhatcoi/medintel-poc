@@ -11,7 +11,6 @@ import 'data/chat_repository.dart';
 import 'widgets/ai_chat_composer.dart';
 import 'widgets/ai_chat_message_tile.dart';
 import 'widgets/ai_chat_quick_replies.dart';
-import 'widgets/ai_chat_top_bar.dart';
 import 'widgets/ai_chat_typing_indicator.dart';
 import 'widgets/ai_chat_welcome_block.dart';
 
@@ -170,7 +169,6 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const AiChatTopBar(),
           Expanded(
             child: ListView(
               controller: _scroll,

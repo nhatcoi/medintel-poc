@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:med_intel_client/l10n/app_localizations.dart';
 
 import '../../../core/theme/vitalis_colors.dart';
@@ -31,7 +32,7 @@ class CaregiverTopBar extends StatelessWidget {
           ),
           IconButton(
             onPressed: () => context.push('/settings'),
-            icon: const Icon(Icons.settings_outlined),
+            icon: const Icon(LucideIcons.settings2),
             color: VitalisColors.onSurface,
             style: IconButton.styleFrom(minimumSize: const Size(48, 48)),
           ),
