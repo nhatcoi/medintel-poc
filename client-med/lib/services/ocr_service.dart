@@ -14,11 +14,14 @@ final class OcrService {
   Future<ScanResult> scanPrescription(
     Uint8List bytes, {
     String filename = 'prescription.jpg',
+    String? profileId,
   }) async {
     final fields = <String, dynamic>{
       'file': MultipartFile.fromBytes(bytes, filename: filename),
     };
-    if (AppConstants.prescriptionUserId.isNotEmpty) {
+    if (profileId != null && profileId.trim().isNotEmpty) {
+      fields['profile_id'] = profileId.trim();
+    } else if (AppConstants.prescriptionUserId.isNotEmpty) {
       fields['user_id'] = AppConstants.prescriptionUserId;
     }
     final formData = FormData.fromMap(fields);

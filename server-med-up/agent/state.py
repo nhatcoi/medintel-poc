@@ -13,6 +13,7 @@ class PatientState(TypedDict, total=False):
     messages: Annotated[list[BaseMessage], add_messages]
     profile_id: str | None
     session_id: str | None
+    include_medication_context: bool
 
     # -- Intent --
     current_intent: str

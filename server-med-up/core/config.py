@@ -25,9 +25,12 @@ class Settings(BaseSettings):
     llm_vision_model: str = "meta-llama/llama-4-scout-17b-16e-instruct"
     llm_max_tokens: int = 768
     llm_temperature: float = 0.3
+    llm_timeout_seconds: float = 20.0
+    llm_max_retries: int = 1
 
     # Chat
     chat_history_limit: int = 8
+    agent_reply_max_tokens: int = 320
     patient_agent_context_max_age_seconds: int = 3600
     patient_agent_context_max_markdown_chars: int = 12000
 

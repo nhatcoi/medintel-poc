@@ -56,7 +56,9 @@ async def reasoning(state: PatientState) -> dict:
         api_key=settings.llm_api_key,
         model=settings.llm_model,
         temperature=settings.llm_temperature,
-        max_tokens=settings.llm_max_tokens,
+        max_tokens=min(settings.llm_max_tokens, settings.agent_reply_max_tokens),
+        timeout=settings.llm_timeout_seconds,
+        max_retries=settings.llm_max_retries,
     )
     llm_with_tools = llm.bind_tools(ALL_TOOLS)
 

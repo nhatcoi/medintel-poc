@@ -4,7 +4,7 @@ import 'package:med_intel_client/l10n/app_localizations.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/vitalis_colors.dart';
 
-/// Lưới 2 cột: adherence (trái) + weekly + vitals (phải).
+/// Lưới 2 cột: adherence (trái) + weekly (phải).
 class MonitoringCardsBlock extends StatelessWidget {
   const MonitoringCardsBlock({
     super.key,
@@ -28,9 +28,7 @@ class MonitoringCardsBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const gap = 12.0;
-    const leftHeight = 260.0;
-    const weeklyH = 158.0;
-    const vitalsH = 90.0;
+    const cardHeight = 240.0;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -39,7 +37,7 @@ class MonitoringCardsBlock extends StatelessWidget {
         children: [
           Expanded(
             child: SizedBox(
-              height: leftHeight,
+              height: cardHeight,
               child: _AdherenceCard(
                 fraction: adherenceFraction,
                 dosesTaken: dosesTaken,
@@ -50,25 +48,10 @@ class MonitoringCardsBlock extends StatelessWidget {
           const SizedBox(width: gap),
           Expanded(
             child: SizedBox(
-              height: leftHeight,
-              child: Column(
-                children: [
-                  SizedBox(
-                    height: weeklyH,
-                    child: _WeeklyScoreCard(
-                      fraction: weeklyScoreFraction,
-                      caption: weeklyCaption,
-                    ),
-                  ),
-                  const SizedBox(height: gap),
-                  SizedBox(
-                    height: vitalsH,
-                    child: _VitalsStrip(
-                      headline: vitalsHeadline,
-                      subtitle: vitalsSub,
-                    ),
-                  ),
-                ],
+              height: cardHeight,
+              child: _WeeklyScoreCard(
+                fraction: weeklyScoreFraction,
+                caption: weeklyCaption,
               ),
             ),
           ),
@@ -264,51 +247,3 @@ class _WeeklyScoreCard extends StatelessWidget {
   }
 }
 
-class _VitalsStrip extends StatelessWidget {
-  const _VitalsStrip({
-    required this.headline,
-    required this.subtitle,
-  });
-
-  final String headline;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-
-    return _SoftPanel(
-      color: VitalisColors.statusSuccessSoft,
-      radius: AppTheme.radiusMd,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          Icon(Icons.favorite_rounded, color: VitalisColors.statusSuccess, size: 28),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  headline,
-                  style: text.titleMedium?.copyWith(
-                    color: VitalisColors.statusSuccess,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                Text(
-                  subtitle,
-                  style: text.bodySmall?.copyWith(
-                    color: VitalisColors.statusSuccess.withValues(alpha: 0.85),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

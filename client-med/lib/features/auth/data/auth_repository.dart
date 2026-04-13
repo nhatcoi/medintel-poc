@@ -46,6 +46,23 @@ class SessionAuthResult {
   }
 }
 
+class OnboardingProfileResult {
+  const OnboardingProfileResult({
+    required this.profileId,
+    required this.fullName,
+  });
+
+  final String profileId;
+  final String fullName;
+
+  factory OnboardingProfileResult.fromJson(Map<String, dynamic> json) {
+    return OnboardingProfileResult(
+      profileId: (json['profile_id'] ?? '').toString(),
+      fullName: (json['full_name'] ?? '').toString(),
+    );
+  }
+}
+
 class AuthRepository {
   AuthRepository(this._api);
   final ApiService _api;
@@ -126,5 +143,19 @@ class AuthRepository {
       '${ApiPaths.profileOnboarding.replaceAll('/onboarding', '')}/$profileId/onboarding',
       data: payload,
     );
+  }
+
+  Future<OnboardingProfileResult> createOnboardingProfile({
+    required String fullName,
+    required String role,
+  }) async {
+    final resp = await _api.client.post<Map<String, dynamic>>(
+      ApiPaths.profileOnboarding,
+      data: {
+        'full_name': fullName,
+        'role': role,
+      },
+    );
+    return OnboardingProfileResult.fromJson(resp.data ?? const {});
   }
 }

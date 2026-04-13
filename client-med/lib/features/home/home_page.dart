@@ -24,6 +24,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   static const int _dayRange = 15;
   static const int _totalDays = _dayRange * 2;
   static const double _dayItemWidth = 56;
+  String? _boundProfileId;
 
   @override
   void initState() {
@@ -65,7 +66,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Future<void> _reload() async {
-    final profileId = ref.read(authProvider).user?.id;
+    final profileId = ref.read(activeProfileIdProvider);
     if (profileId == null || profileId.isEmpty) return;
     await ref.read(treatmentProvider.notifier).loadMedications(profileId);
     await ref.read(treatmentProvider.notifier).loadSummary(profileId);
@@ -75,7 +76,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     required String medicationId,
     required String status,
   }) async {
-    final profileId = ref.read(authProvider).user?.id;
+    final profileId = ref.read(activeProfileIdProvider);
     if (profileId == null || profileId.isEmpty) return;
     await ref.read(treatmentProvider.notifier).logDose(
           profileId: profileId,
@@ -86,8 +87,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Future<void> _openAddMedicationSheet() async {
-    final auth = ref.read(authProvider);
-    final profileId = auth.user?.id;
+    final profileId = ref.read(activeProfileIdProvider);
     if (profileId == null || profileId.isEmpty) return;
 
     final selected = await showModalBottomSheet<MedicationSearchCandidate>(
@@ -118,14 +118,16 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final currentProfileId = ref.watch(activeProfileIdProvider);
+    if (currentProfileId != _boundProfileId) {
+      _boundProfileId = currentProfileId;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _reload());
+    }
     final state = ref.watch(treatmentProvider);
     final sections = buildHomeDoseSections(state.items, state.logs, _selectedDate);
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final user = ref.watch(authProvider).user;
-    final displayName = (user?.fullName?.trim().isNotEmpty ?? false)
-        ? user!.fullName!.trim()
-        : 'Toi';
+    final displayName = ref.watch(activeProfileDisplayNameProvider);
 
     return Scaffold(
       body: RefreshIndicator(

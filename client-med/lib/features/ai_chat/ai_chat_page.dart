@@ -32,6 +32,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
   String? _chatSessionId;
   /// Gợi ý từ GET /chat/welcome-hints; null = chưa tải hoặc lỗi (dùng fallback l10n).
   List<String>? _welcomeHintsFromApi;
+  String? _boundProfileId;
 
   @override
   void initState() {
@@ -43,7 +44,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
   }
 
   Future<void> _loadWelcomeHints() async {
-    final id = ref.read(authProvider).user?.id;
+    final id = ref.read(activeProfileIdProvider);
     if (id == null || id.trim().isEmpty) return;
     final hints = await _repo.fetchWelcomeHints(id);
     if (!mounted) return;
@@ -82,8 +83,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
     _scrollToBottom();
 
     try {
-      final auth = ref.read(authProvider);
-      final profileId = auth.user?.id;
+      final profileId = ref.read(activeProfileIdProvider);
       final hasProfile = profileId != null && profileId.isNotEmpty;
 
       final result = await _repo.sendMessage(
@@ -163,6 +163,14 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
 
   @override
   Widget build(BuildContext context) {
+    final currentProfileId = ref.watch(activeProfileIdProvider);
+    if (currentProfileId != _boundProfileId) {
+      _boundProfileId = currentProfileId;
+      _chatSessionId = null;
+      _messages.clear();
+      _welcomeHintsFromApi = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _loadWelcomeHints());
+    }
     final l10n = AppLocalizations.of(context);
     return ColoredBox(
       color: VitalisColors.background,

@@ -12,6 +12,10 @@ from repositories import medication_repo, memory_repo, medical_repo
 
 
 async def context_loader(state: PatientState) -> dict:
+    if not state.get("include_medication_context", False):
+        # Fast path: skip DB hydration when caller does not need medication context.
+        return {}
+
     profile_id_str = state.get("profile_id")
     if not profile_id_str:
         return {}

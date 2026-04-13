@@ -72,7 +72,11 @@ class _PrescriptionScanPageState extends ConsumerState<PrescriptionScanPage> {
     });
 
     try {
-      final result = await _ocrService.scanPrescription(bytes);
+      final profileId = ref.read(activeProfileIdProvider);
+      final result = await _ocrService.scanPrescription(
+        bytes,
+        profileId: profileId,
+      );
       if (!mounted) return;
       setState(() {
         _scanResult = result;
@@ -114,7 +118,7 @@ class _PrescriptionScanPageState extends ConsumerState<PrescriptionScanPage> {
     final result = _scanResult;
     if (result == null || result.medications.isEmpty || _isAdding) return;
 
-    final profileId = ref.read(authProvider).user?.id;
+    final profileId = ref.read(activeProfileIdProvider);
     if (profileId == null || profileId.isEmpty) {
       setState(() {
         _error = 'Bạn cần đăng nhập để thêm thuốc vào lịch uống.';

@@ -41,6 +41,7 @@ async def _invoke_graph(body: ChatRequest) -> ChatResponse:
         "messages": [HumanMessage(content=body.text)],
         "profile_id": body.profile_id,
         "session_id": body.session_id,
+        "include_medication_context": body.include_medication_context,
     }
 
     config = {"configurable": {"thread_id": body.session_id or str(uuid.uuid4())}}
