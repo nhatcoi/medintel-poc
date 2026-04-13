@@ -99,6 +99,8 @@ def create_medication(
     start_date: date | None = None,
     end_date: date | None = None,
     notes: str | None = None,
+    prescribing_doctor: str | None = None,
+    prescription_date: date | None = None,
 ) -> Medication:
     med = Medication(
         period_id=period_id,
@@ -109,6 +111,8 @@ def create_medication(
         start_date=start_date or date.today(),
         end_date=end_date,
         notes=notes,
+        prescribing_doctor=prescribing_doctor,
+        prescription_date=prescription_date,
         status="active",
     )
     db.add(med)

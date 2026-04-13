@@ -14,6 +14,12 @@ class MedicationItem(BaseModel):
     duration_days: int | None = None
     instructions: str | None = None
     side_effects: str | None = None
+    times: list[str] = Field(default_factory=list)
+
+
+class SavedMedicationRef(BaseModel):
+    id: str
+    name: str
 
 
 class ScanResult(BaseModel):
@@ -21,9 +27,5 @@ class ScanResult(BaseModel):
     prescribing_doctor: str | None = None
     prescription_date: str | None = None
     medications: list[MedicationItem] = Field(default_factory=list)
-
-
-class ScanPersistedResponse(BaseModel):
-    record_id: str
-    period_id: str
-    medication_ids: list[str]
+    prescription_id: str | None = None
+    saved_medications: list[SavedMedicationRef] = Field(default_factory=list)

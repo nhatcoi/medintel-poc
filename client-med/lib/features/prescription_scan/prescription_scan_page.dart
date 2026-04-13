@@ -2,30 +2,36 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:med_intel_client/l10n/app_localizations.dart';
 
 import '../../core/theme/vitalis_colors.dart';
+import '../../features/treatment/data/treatment_provider.dart';
+import '../../providers/providers.dart';
 import '../../services/api_service.dart';
 import '../../services/ocr_service.dart';
 import 'widgets/scan_empty_state.dart';
 import 'widgets/scan_result_view.dart';
 import 'widgets/scan_top_bar.dart';
 
-class PrescriptionScanPage extends StatefulWidget {
+class PrescriptionScanPage extends ConsumerStatefulWidget {
   const PrescriptionScanPage({super.key});
 
   @override
-  State<PrescriptionScanPage> createState() => _PrescriptionScanPageState();
+  ConsumerState<PrescriptionScanPage> createState() =>
+      _PrescriptionScanPageState();
 }
 
-class _PrescriptionScanPageState extends State<PrescriptionScanPage> {
+class _PrescriptionScanPageState extends ConsumerState<PrescriptionScanPage> {
   final ImagePicker _picker = ImagePicker();
   late final OcrService _ocrService;
 
   Uint8List? _imageBytes;
   ScanResult? _scanResult;
   bool _isScanning = false;
+  bool _isAdding = false;
   String? _error;
 
   @override
@@ -100,7 +106,66 @@ class _PrescriptionScanPageState extends State<PrescriptionScanPage> {
       _scanResult = null;
       _error = null;
       _isScanning = false;
+      _isAdding = false;
     });
+  }
+
+  Future<void> _addScannedToTreatment() async {
+    final result = _scanResult;
+    if (result == null || result.medications.isEmpty || _isAdding) return;
+
+    final profileId = ref.read(authProvider).user?.id;
+    if (profileId == null || profileId.isEmpty) {
+      setState(() {
+        _error = 'Bạn cần đăng nhập để thêm thuốc vào lịch uống.';
+      });
+      return;
+    }
+
+    setState(() {
+      _isAdding = true;
+      _error = null;
+    });
+
+    try {
+      // Server scan đã auto-persist. Chỉ fallback tạo tay nếu chưa lưu được.
+      if (result.savedMedications.isEmpty) {
+        final notifier = ref.read(treatmentProvider.notifier);
+        for (final med in result.medications) {
+          await notifier.addMedication(
+            profileId: profileId,
+            medicationName: med.name,
+            dosage: med.dosage,
+            frequency: med.frequency,
+            instructions: med.instructions,
+            scheduleTimes: med.times,
+          );
+        }
+      } else {
+        await ref.read(treatmentProvider.notifier).loadMedications(profileId);
+      }
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Đã thêm ${result.savedMedications.isNotEmpty ? result.savedMedications.length : result.medications.length} thuốc vào lịch uống.',
+          ),
+        ),
+      );
+      context.go('/home');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Thêm thuốc thất bại: $e';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isAdding = false;
+        });
+      }
+    }
   }
 
   @override
@@ -192,7 +257,33 @@ class _PrescriptionScanPageState extends State<PrescriptionScanPage> {
             ),
           ),
         ],
-        if (_scanResult != null) ScanResultView(result: _scanResult!),
+        if (_scanResult != null) ...[
+          ScanResultView(result: _scanResult!),
+          const SizedBox(height: 12),
+          if (_scanResult!.medications.isNotEmpty)
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _isAdding ? null : _addScannedToTreatment,
+                icon: _isAdding
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.add_task_rounded, size: 18),
+                label: Text(_isAdding ? 'Đang thêm...' : 'Thêm vào lịch uống'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: VitalisColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+              ),
+            ),
+        ],
         const SizedBox(height: 20),
         Row(
           children: [
