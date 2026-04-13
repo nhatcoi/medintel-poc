@@ -6,6 +6,7 @@ CLAUDE.local.md
 .cursor/mcp.local.json
 v4
 client-template/
+ui/
 
 # Môi trường & bí mật
 .env
