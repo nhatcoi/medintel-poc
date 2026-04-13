@@ -13,8 +13,10 @@ final class ApiPaths {
 
   static const String chatMessage = '/api/v1/chat/message';
   static const String chatWelcomeHints = '/api/v1/chat/welcome-hints';
+  static const String ragSearch = '/api/v1/rag/search';
 
   static const String treatmentMedications = '/api/v1/treatment/medications';
+  static const String treatmentMedicationsSearch = '/api/v1/treatment/medications/search';
   static const String treatmentAdherenceSummary =
       '/api/v1/treatment/adherence/summary';
   static const String treatmentNextDose = '/api/v1/treatment/next-dose';

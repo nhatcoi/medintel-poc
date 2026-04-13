@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:med_intel_client/app/router.dart';
 import 'package:med_intel_client/core/theme/app_theme.dart';
+import 'package:med_intel_client/core/theme/display_fonts.dart';
 import 'package:med_intel_client/l10n/app_localizations.dart';
 import 'package:med_intel_client/providers/display_preferences_provider.dart';
 import 'package:med_intel_client/providers/locale_preferences_provider.dart';
@@ -65,7 +66,7 @@ class _MedIntelAppState extends ConsumerState<MedIntelApp> {
 
     return MaterialApp.router(
       onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
-      theme: AppTheme.light(fontId: display.fontId),
+      theme: AppTheme.light(fontId: DisplayFontIds.inter),
       routerConfig: _router,
       locale: Locale(appLang),
       localizationsDelegates: AppLocalizations.localizationsDelegates,

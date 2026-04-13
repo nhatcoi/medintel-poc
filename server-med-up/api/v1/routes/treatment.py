@@ -105,13 +105,7 @@ def create_medication(body: MedicationCreate, db: DbSession):
         except ValueError as exc:
             raise HTTPException(status_code=400, detail="Invalid period UUID") from exc
     else:
-        period_id = medication_repo.get_latest_period_id_by_profile(db, pid)
-
-    if period_id is None:
-        raise HTTPException(
-            status_code=400,
-            detail="No treatment period found for profile. Create medical record/period first.",
-        )
+        period_id = medication_repo.ensure_latest_period_id_by_profile(db, pid)
 
     med = medication_repo.create_medication(
         db,

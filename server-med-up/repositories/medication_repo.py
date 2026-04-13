@@ -39,6 +39,36 @@ def get_latest_period_id_by_profile(db: Session, profile_id: uuid.UUID) -> uuid.
     return db.scalars(stmt).first()
 
 
+def ensure_latest_period_id_by_profile(db: Session, profile_id: uuid.UUID) -> uuid.UUID:
+    """Return latest treatment period id, auto-create a default one if missing."""
+    existing = get_latest_period_id_by_profile(db, profile_id)
+    if existing is not None:
+        return existing
+
+    today = date.today()
+    record = MedicalRecord(
+        profile_id=profile_id,
+        disease_name="General treatment",
+        treatment_start_date=today,
+        treatment_status="active",
+        treatment_type="manual",
+        notes="Auto-created for medication onboarding",
+    )
+    db.add(record)
+    db.flush()
+
+    period = TreatmentPeriod(
+        record_id=record.id,
+        period_name=f"Default period {today.isoformat()}",
+        start_date=today,
+        status="active",
+        notes="Auto-created because no treatment period existed",
+    )
+    db.add(period)
+    db.flush()
+    return period.id
+
+
 def search_medications(db: Session, q: str, limit: int = 20) -> list[Medication]:
     keyword = f"%{q.strip()}%"
     stmt = (
