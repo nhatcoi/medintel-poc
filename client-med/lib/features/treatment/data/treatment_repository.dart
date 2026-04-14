@@ -104,22 +104,49 @@ class TreatmentRepository {
     required String medicationId,
     required String profileId,
     required String status,
+    String? scheduledTime,
+    DateTime? scheduledDate,
     String? notes,
   }) async {
     final schedules = await listSchedules(medicationId);
     if (schedules.isEmpty) {
       throw const FormatException('No schedule found for medication');
     }
-    final scheduleId = schedules.first.scheduleId;
-    final now = DateTime.now().toUtc().toIso8601String();
+    MedicationScheduleItem selected = schedules.first;
+    final hhmm = scheduledTime?.trim();
+    if (hhmm != null && hhmm.isNotEmpty) {
+      for (final s in schedules) {
+        final normalized = s.scheduledTime.length >= 5
+            ? s.scheduledTime.substring(0, 5)
+            : s.scheduledTime;
+        if (normalized == hhmm) {
+          selected = s;
+          break;
+        }
+      }
+    }
+
+    final nowUtc = DateTime.now().toUtc();
+    DateTime scheduledUtc = nowUtc;
+    if (scheduledDate != null && hhmm != null && RegExp(r'^([01]\d|2[0-3]):[0-5]\d$').hasMatch(hhmm)) {
+      final parts = hhmm.split(':');
+      final scheduledLocal = DateTime(
+        scheduledDate.year,
+        scheduledDate.month,
+        scheduledDate.day,
+        int.parse(parts[0]),
+        int.parse(parts[1]),
+      );
+      scheduledUtc = scheduledLocal.toUtc();
+    }
     final resp = await _api.client.post<Map<String, dynamic>>(
       '${ApiPaths.treatmentMedications}/$medicationId/logs',
       data: {
-        'schedule_id': scheduleId,
+        'schedule_id': selected.scheduleId,
         'profile_id': profileId,
         'status': status,
-        'scheduled_datetime': now,
-        'actual_datetime': now,
+        'scheduled_datetime': scheduledUtc.toIso8601String(),
+        'actual_datetime': nowUtc.toIso8601String(),
         'notes': notes,
       },
     );
@@ -139,6 +166,27 @@ class TreatmentRepository {
         .whereType<Map>()
         .map((e) => MedicationLogItem.fromJson(Map<String, dynamic>.from(e)))
         .toList();
+  }
+
+  Future<MedicationLogItem> updateMedicationLog({
+    required String medicationId,
+    required String logId,
+    String? status,
+    String? notes,
+  }) async {
+    final payload = <String, dynamic>{};
+    if (status != null) payload['status'] = status;
+    if (notes != null) payload['notes'] = notes;
+    if (status != null) {
+      payload['actual_datetime'] = DateTime.now().toUtc().toIso8601String();
+    }
+    final resp = await _api.client.patch<Map<String, dynamic>>(
+      '${ApiPaths.treatmentMedications}/$medicationId/logs/$logId',
+      data: payload,
+    );
+    final data = resp.data;
+    if (data == null) throw const FormatException('Empty medication log response');
+    return MedicationLogItem.fromJson(data);
   }
 
   Future<List<MedicationScheduleItem>> listSchedules(String medicationId) async {

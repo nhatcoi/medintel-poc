@@ -5,6 +5,8 @@ import '../features/auth/data/auth_notifier.dart';
 import '../features/auth/getting_started_page.dart';
 import '../features/auth/patient_setup_page.dart';
 import '../features/caregiver/caregiver_dashboard_page.dart';
+import '../features/memory/memory_page.dart';
+import '../features/medical_records/medical_records_page.dart';
 import '../features/reminder/reminder_page.dart';
 import '../features/settings/settings_page.dart';
 import '../features/shell/branch_pages.dart';
@@ -98,6 +100,16 @@ GoRouter createMedIntelRouter(WidgetRef ref) {
         path: '/reminder',
         name: 'reminder',
         builder: (context, state) => const ReminderPage(),
+      ),
+      GoRoute(
+        path: '/medical-records',
+        name: 'medical-records',
+        builder: (context, state) => const MedicalRecordsPage(),
+      ),
+      GoRoute(
+        path: '/memory',
+        name: 'memory',
+        builder: (context, state) => const MemoryPage(),
       ),
     ],
   );
