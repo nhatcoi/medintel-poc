@@ -7,6 +7,12 @@ class SuggestedAction(BaseModel):
     label: str
     prompt: str
     category: str = "other"
+    # Optional -- client mới có thể bấm thẳng tool/navigate/escalate thay vì chỉ gõ prompt.
+    type: str | None = None  # "prompt" | "tool" | "navigate" | "escalate"
+    route: str | None = None
+    tool: str | None = None
+    tool_args: dict | None = None
+    priority: int | None = None
 
 
 class ToolCall(BaseModel):

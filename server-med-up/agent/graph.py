@@ -1,7 +1,8 @@
 """LangGraph StateGraph builder -- the orchestration core of server-med-up.
 
 Pipeline:
-  intent_router -> context_loader -> (rag_retriever?) -> reasoning -> (tool_executor? -> reasoning) -> safety_guard -> response_composer
+  intent_router -> context_loader -> (rag_retriever?) -> reasoning
+  -> (tool_executor? -> reasoning) -> safety_guard -> action_planner -> response_composer
 """
 
 from __future__ import annotations
@@ -10,6 +11,7 @@ from langgraph.graph import END, StateGraph
 
 from agent.checkpointer import get_checkpointer
 from agent.intents.definitions import INTENTS_NEEDING_RAG
+from agent.nodes.action_planner import action_planner
 from agent.nodes.context_loader import context_loader
 from agent.nodes.intent_router import intent_router
 from agent.nodes.rag_retriever import rag_retriever
@@ -46,6 +48,7 @@ def build_graph():
     builder.add_node("reasoning", reasoning)
     builder.add_node("tool_executor", tool_executor)
     builder.add_node("safety_guard", safety_guard)
+    builder.add_node("action_planner", action_planner)
     builder.add_node("response_composer", response_composer)
 
     builder.set_entry_point("intent_router")
@@ -55,7 +58,8 @@ def build_graph():
     builder.add_edge("rag_retriever", "reasoning")
     builder.add_conditional_edges("reasoning", _route_after_reasoning)
     builder.add_conditional_edges("tool_executor", _route_after_tools)
-    builder.add_edge("safety_guard", "response_composer")
+    builder.add_edge("safety_guard", "action_planner")
+    builder.add_edge("action_planner", "response_composer")
     builder.add_edge("response_composer", END)
 
     checkpointer = get_checkpointer()

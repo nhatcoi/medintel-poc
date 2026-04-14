@@ -4,7 +4,7 @@ import uuid
 from datetime import date, datetime, time
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, Numeric, String, Text, Time
+from sqlalchemy import Date, DateTime, ForeignKey, Numeric, String, Text, Time
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.database import Base, GUID
@@ -20,24 +20,11 @@ class Medication(Base, TimestampMixin):
     id: Mapped[uuid.UUID] = mapped_column("medication_id", GUID, primary_key=True, default=uuid.uuid4)
     period_id: Mapped[uuid.UUID] = mapped_column(GUID, ForeignKey("treatment_periods.period_id"), nullable=False, index=True)
     medication_name: Mapped[str] = mapped_column(String(255))
-    active_ingredient: Mapped[str | None] = mapped_column(Text, nullable=True)
-    strength: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    dosage_form: Mapped[str | None] = mapped_column(String(100), nullable=True)
     dosage: Mapped[str | None] = mapped_column(String(100), nullable=True)
     frequency: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    route: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    duration_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
     start_date: Mapped[date] = mapped_column(Date, nullable=False)
     end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     instructions: Mapped[str | None] = mapped_column(Text, nullable=True)
-    side_effects: Mapped[str | None] = mapped_column(Text, nullable=True)
-    contraindications: Mapped[str | None] = mapped_column(Text, nullable=True)
-    interactions: Mapped[str | None] = mapped_column(Text, nullable=True)
-    storage_instructions: Mapped[str | None] = mapped_column(Text, nullable=True)
-    prescribing_doctor: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    prescription_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    prescription_date: Mapped[date | None] = mapped_column(Date, nullable=True)
-    total_quantity: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
     quantity_unit: Mapped[str | None] = mapped_column(String(50), nullable=True)
     remaining_quantity: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -55,13 +42,6 @@ class MedicationSchedule(Base, TimestampMixin):
     id: Mapped[uuid.UUID] = mapped_column("schedule_id", GUID, primary_key=True, default=uuid.uuid4)
     medication_id: Mapped[uuid.UUID] = mapped_column(GUID, ForeignKey("medications.medication_id"), nullable=False, index=True)
     scheduled_time: Mapped[time] = mapped_column(Time, nullable=False)
-    repeat_pattern: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    repeat_days: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
-    end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
-    reminder_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
-    reminder_time_before: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    reminder_sound: Mapped[str | None] = mapped_column(String(100), nullable=True)
     status: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     medication: Mapped[Medication] = relationship("Medication", back_populates="schedules")

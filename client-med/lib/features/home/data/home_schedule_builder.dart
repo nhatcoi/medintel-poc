@@ -37,7 +37,8 @@ List<HomeDoseSection> buildHomeDoseSections(
   }
 
   for (final med in meds) {
-    if ((med.status ?? 'active') != 'active') continue;
+    final medStatus = (med.status ?? 'active').trim().toLowerCase();
+    if (medStatus != 'active') continue;
     for (final time in med.scheduleTimes) {
       final key = time.trim();
       if (key.isEmpty) continue;

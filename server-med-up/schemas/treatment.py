@@ -9,17 +9,14 @@ class MedicationCreate(BaseModel):
     profile_id: str
     period_id: str | None = None
     medication_name: str
-    active_ingredient: str | None = None
-    strength: str | None = None
-    dosage_form: str | None = None
     dosage: str | None = None
     frequency: str | None = None
-    route: str | None = None
-    duration_days: int | None = None
     start_date: date
     end_date: date | None = None
     instructions: str | None = None
     notes: str | None = None
+    remaining_quantity: float | None = None
+    quantity_unit: str | None = None
 
 
 class MedicationRead(BaseModel):
@@ -32,6 +29,8 @@ class MedicationRead(BaseModel):
     instructions: str | None = None
     status: str | None = None
     period_id: str | None = None
+    remaining_quantity: float | None = None
+    quantity_unit: str | None = None
 
 
 class MedicationListResponse(BaseModel):
@@ -47,12 +46,32 @@ class MedicationUpdate(BaseModel):
     end_date: date | None = None
     status: str | None = None
     notes: str | None = None
+    remaining_quantity: float | None = None
+    quantity_unit: str | None = None
+
+
+class MedicationInventoryUpdate(BaseModel):
+    remaining_quantity: float
+    quantity_unit: str | None = None
+    low_stock_threshold: float | None = None
+
+
+class MedicationConsumeRequest(BaseModel):
+    amount: float = 1.0
+    notes: str | None = None
+
+
+class LowStockItem(BaseModel):
+    medication_id: str
+    medication_name: str
+    remaining_quantity: float | None = None
+    quantity_unit: str | None = None
+    low_stock_threshold: float | None = None
 
 
 class MedicationSearchItem(BaseModel):
     medication_id: str
     medication_name: str
-    active_ingredient: str | None = None
     indications: str | None = None
 
 
@@ -64,32 +83,20 @@ class ScheduleRead(BaseModel):
     schedule_id: str
     medication_id: str
     medication_name: str | None = None
+    medication_dosage: str | None = None
+    medication_frequency: str | None = None
+    medication_instructions: str | None = None
     scheduled_time: time
-    reminder_enabled: bool = True
     status: str | None = None
 
 
 class ScheduleCreate(BaseModel):
     scheduled_time: time
-    repeat_pattern: str | None = None
-    repeat_days: str | None = None
-    start_date: date | None = None
-    end_date: date | None = None
-    reminder_enabled: bool = True
-    reminder_time_before: int | None = None
-    reminder_sound: str | None = None
     status: str | None = "active"
 
 
 class ScheduleUpdate(BaseModel):
     scheduled_time: time | None = None
-    repeat_pattern: str | None = None
-    repeat_days: str | None = None
-    start_date: date | None = None
-    end_date: date | None = None
-    reminder_enabled: bool | None = None
-    reminder_time_before: int | None = None
-    reminder_sound: str | None = None
     status: str | None = None
 
 

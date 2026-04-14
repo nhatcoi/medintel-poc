@@ -51,11 +51,11 @@ GoRouter createMedIntelRouter(WidgetRef ref) {
           ]),
           StatefulShellBranch(routes: [
             GoRoute(
-              path: '/scan',
-              name: 'scan',
+              path: '/cabinet',
+              name: 'cabinet',
               pageBuilder: (context, state) => NoTransitionPage<void>(
                 key: state.pageKey,
-                child: const ScanBranchPage(),
+                child: const CabinetBranchPage(),
               ),
             ),
           ]),
@@ -90,6 +90,11 @@ GoRouter createMedIntelRouter(WidgetRef ref) {
             ),
           ]),
         ],
+      ),
+      GoRoute(
+        path: '/scan',
+        name: 'scan',
+        builder: (context, state) => const ScanPageRoute(),
       ),
       GoRoute(
         path: '/settings',

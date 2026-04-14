@@ -74,8 +74,6 @@ async def scan_prescription(
             instructions=med.get("instructions"),
             start_date=parsed_prescription_date or date.today(),
             notes=f"Created from OCR scan ({file.filename or 'prescription image'})",
-            prescribing_doctor=result.get("prescribing_doctor"),
-            prescription_date=parsed_prescription_date,
         )
 
         times = med.get("times") or ["08:00"]

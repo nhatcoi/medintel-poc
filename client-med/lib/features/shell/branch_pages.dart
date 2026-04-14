@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../ai_chat/ai_chat_page.dart';
+import '../cabinet/cabinet_page.dart';
 import '../history/history_page.dart';
 import '../home/home_page.dart';
 import '../prescription_scan/prescription_scan_page.dart';
@@ -13,8 +14,15 @@ class HomeBranchPage extends StatelessWidget {
   Widget build(BuildContext context) => const HomePage();
 }
 
-class ScanBranchPage extends StatelessWidget {
-  const ScanBranchPage({super.key});
+class CabinetBranchPage extends StatelessWidget {
+  const CabinetBranchPage({super.key});
+
+  @override
+  Widget build(BuildContext context) => const CabinetPage();
+}
+
+class ScanPageRoute extends StatelessWidget {
+  const ScanPageRoute({super.key});
 
   @override
   Widget build(BuildContext context) => const PrescriptionScanPage();

@@ -70,7 +70,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   Future<void> _reload() async {
     final profileId = ref.read(activeProfileIdProvider);
     if (profileId == null || profileId.isEmpty) return;
-    await ref.read(treatmentProvider.notifier).loadMedications(profileId);
+    await ref.read(treatmentProvider.notifier).loadHomeSchedule(profileId);
     await ref.read(treatmentProvider.notifier).loadSummary(profileId);
   }
 

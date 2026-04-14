@@ -58,14 +58,50 @@ class TreatmentNotifier extends StateNotifier<TreatmentState> {
   final TreatmentRepository _repo;
 
   Future<void> loadMedications(String profileId) async {
+    await loadHomeSchedule(profileId);
+  }
+
+  Future<void> loadCabinet(String profileId) async {
     state = state.copyWith(loading: true, error: null);
     try {
       final items = await _repo.listMedications(profileId);
-      final allLogs = <MedicationLogItem>[];
-      for (final med in items) {
-        final logs = await _repo.listMedicationLogs(med.medicationId);
-        allLogs.addAll(logs);
+      state = state.copyWith(
+        loading: false,
+        items: items,
+        error: null,
+      );
+    } catch (e) {
+      state = state.copyWith(loading: false, error: e.toString());
+    }
+  }
+
+  Future<void> loadHomeSchedule(String profileId) async {
+    state = state.copyWith(loading: true, error: null);
+    try {
+      final schedules = await _repo.listSchedulesByProfile(profileId);
+      final medMap = <String, MedicationItem>{};
+      for (final s in schedules) {
+        final existing = medMap[s.medicationId];
+        if (existing == null) {
+          medMap[s.medicationId] = MedicationItem(
+            medicationId: s.medicationId,
+            name: (s.medicationName ?? '').trim().isEmpty
+                ? 'Thuốc'
+                : s.medicationName!.trim(),
+            dosage: s.medicationDosage,
+            frequency: s.medicationFrequency,
+            instructions: s.medicationInstructions,
+            status: s.status ?? 'active',
+            scheduleTimes: [s.scheduledTime],
+          );
+        } else {
+          medMap[s.medicationId] = existing.copyWith(
+            scheduleTimes: [...existing.scheduleTimes, s.scheduledTime],
+          );
+        }
       }
+      final items = medMap.values.toList();
+      final allLogs = await _repo.listLogsByProfile(profileId);
       final nextDose = await _repo.getNextDose(profileId);
       final missed = await _repo.getMissedDoseCheck(profileId);
       state = state.copyWith(
@@ -97,7 +133,7 @@ class TreatmentNotifier extends StateNotifier<TreatmentState> {
       instructions: instructions,
       scheduleTimes: scheduleTimes,
     );
-    await loadMedications(profileId);
+    await loadCabinet(profileId);
   }
 
   Future<void> updateMedication({
@@ -109,7 +145,7 @@ class TreatmentNotifier extends StateNotifier<TreatmentState> {
       medicationId: medicationId,
       status: status,
     );
-    await loadMedications(profileId);
+    await loadCabinet(profileId);
   }
 
   Future<void> logDose({
@@ -130,7 +166,7 @@ class TreatmentNotifier extends StateNotifier<TreatmentState> {
     );
     // Reload full dataset to avoid transient UI flicker where `logs`
     // gets overwritten by a single-medication subset.
-    await loadMedications(profileId);
+    await loadHomeSchedule(profileId);
     await loadSummary(profileId);
   }
 
@@ -147,7 +183,7 @@ class TreatmentNotifier extends StateNotifier<TreatmentState> {
       status: status,
       notes: notes,
     );
-    await loadMedications(profileId);
+    await loadHomeSchedule(profileId);
     await loadSummary(profileId);
   }
 

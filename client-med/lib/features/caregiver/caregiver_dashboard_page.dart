@@ -8,6 +8,8 @@ import '../../data/dashboard_from_local.dart';
 import '../../data/local_medintel_state.dart';
 import '../../providers/local_medintel_provider.dart';
 import '../../providers/providers.dart';
+import '../treatment/data/treatment_models.dart';
+import '../treatment/data/treatment_provider.dart';
 import 'data/caregiver_profiles_state.dart';
 import 'widgets/caregiver_top_bar.dart';
 import 'widgets/medications_section.dart';
@@ -16,25 +18,50 @@ import 'widgets/patient_monitoring_header.dart';
 import 'widgets/recent_alerts_section.dart';
 
 /// **Care** — theo dõi từ dữ liệu database / cache (cùng nguồn với Home); không dùng mẫu John Doe.
-class CaregiverDashboardPage extends ConsumerWidget {
+class CaregiverDashboardPage extends ConsumerStatefulWidget {
   const CaregiverDashboardPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CaregiverDashboardPage> createState() =>
+      _CaregiverDashboardPageState();
+}
+
+class _CaregiverDashboardPageState extends ConsumerState<CaregiverDashboardPage> {
+  String? _boundProfileId;
+
+  Future<void> _reloadForActiveProfile() async {
+    final profileId = ref.read(activeProfileIdProvider);
+    if (profileId == null || profileId.isEmpty) return;
+    await ref.read(treatmentProvider.notifier).loadHomeSchedule(profileId);
+    await ref.read(treatmentProvider.notifier).loadSummary(profileId);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final local = ref.watch(localMedintelProvider);
     final auth = ref.watch(authProvider);
     final primaryName = auth.user?.fullName?.trim().isNotEmpty == true
         ? auth.user!.fullName!.trim()
         : l10n.genericYou;
+    final authProfileId = auth.user?.id ?? '';
     ref.read(caregiverProfilesProvider.notifier).syncPrimaryProfile(
           displayName: primaryName,
-          profileId: auth.user?.id ?? '',
+          profileId: authProfileId,
           localState: local,
         );
+    final activeProfileId = ref.watch(activeProfileIdProvider);
+    if (activeProfileId != _boundProfileId) {
+      _boundProfileId = activeProfileId;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _reloadForActiveProfile());
+    }
     final profilesState = ref.watch(caregiverProfilesProvider);
     final selectedProfile = profilesState.selectedProfile;
-    final selectedLocal = selectedProfile?.localState ?? LocalMedintelState.empty;
+    final treatment = ref.watch(treatmentProvider);
+    final selectedLocal = _localFromTreatment(
+      items: treatment.items,
+      logs: treatment.logs,
+    );
     final patientName = selectedProfile?.displayName ?? primaryName;
     final model = DashboardFromLocal.buildCaregiver(selectedLocal, patientName, l10n);
 
@@ -150,6 +177,37 @@ class CaregiverDashboardPage extends ConsumerWidget {
           displayName: name,
           relationshipLabel: relation,
         );
+  }
+
+  LocalMedintelState _localFromTreatment({
+    required List<MedicationItem> items,
+    required List<MedicationLogItem> logs,
+  }) {
+    final meds = items
+        .map(
+          (m) => LocalMedication(
+            id: m.medicationId,
+            name: m.name,
+            dosageLabel: m.dosage,
+            scheduleHint: m.scheduleTimes.isNotEmpty ? m.scheduleTimes.join(', ') : null,
+          ),
+        )
+        .toList();
+    final doseLogs = logs
+        .map(
+          (l) => LocalDoseLog(
+            id: l.logId,
+            medicationName: l.medicationName ?? '',
+            status: l.status,
+            recordedAtIso: (l.actualDatetime ?? l.scheduledDatetime).toIso8601String(),
+            note: l.notes,
+          ),
+        )
+        .toList();
+    return LocalMedintelState(
+      medications: meds,
+      doseLogs: doseLogs,
+    );
   }
 }
 
