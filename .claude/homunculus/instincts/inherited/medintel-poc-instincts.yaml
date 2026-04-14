@@ -1,0 +1,353 @@
+# Instincts generated from https://github.com/nhatcoi/medintel-poc
+# Generated: 2026-04-14T03:21:34.320Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: medintel-poc-commit-conventional
+trigger: "when writing a commit message"
+confidence: 0.85
+domain: git
+source: repo-analysis
+source_repo: https://github.com/nhatcoi/medintel-poc
+---
+
+# Medintel Poc Commit Conventional
+
+## Action
+
+Use conventional commit format with prefixes: feat
+
+## Evidence
+
+- 2 commits analyzed
+- Detected conventional commit pattern
+- Examples: feat: enhance medication logging with validation and time selection features
+
+---
+id: medintel-poc-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/nhatcoi/medintel-poc
+---
+
+# Medintel Poc Commit Length
+
+## Action
+
+Write moderate-length commit messages (~76 characters)
+
+## Evidence
+
+- Average commit message length: 76 chars
+- Based on 2 commits
+
+---
+id: medintel-poc-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/nhatcoi/medintel-poc
+---
+
+# Medintel Poc Naming Files
+
+## Action
+
+Use snake_case naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: snake_case
+
+---
+id: medintel-poc-import-relative
+trigger: "when importing modules"
+confidence: 0.75
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/nhatcoi/medintel-poc
+---
+
+# Medintel Poc Import Relative
+
+## Action
+
+Use relative imports for project files
+
+## Evidence
+
+- Import analysis shows relative import pattern
+- Example: import { x } from '../lib/x'
+
+---
+id: medintel-poc-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/nhatcoi/medintel-poc
+---
+
+# Medintel Poc Export Style
+
+## Action
+
+Prefer named exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: named
+
+---
+id: medintel-poc-workflow-feature-enhancement-with-ui-and-tests
+trigger: "when doing feature enhancement with ui and tests"
+confidence: 0.6
+domain: workflow
+source: repo-analysis
+source_repo: https://github.com/nhatcoi/medintel-poc
+---
+
+# Medintel Poc Workflow Feature Enhancement With Ui And Tests
+
+## Action
+
+Follow the feature-enhancement-with-ui-and-tests workflow:
+1. Update or add Dart files in lib/features/<feature> for UI and logic changes
+2. Update data models and repositories in lib/features/<feature>/data/
+3. Update or add widgets in lib/features/<feature>/widgets/
+4. Update constants or theme files if needed
+5. Update or add tests in test/ related to the feature
+6. Update documentation in README.md if relevant
+
+## Evidence
+
+- Workflow detected from commit patterns
+- Frequency: ~2x per month
+- Files: client-med/lib/features/*/*.dart, client-med/lib/features/*/data/*.dart, client-med/lib/features/*/widgets/*.dart
+
+---
+id: medintel-poc-instinct-file-naming
+trigger: "When creating or renaming a file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: nhatcoi/medintel-poc
+---
+
+# Medintel Poc Instinct File Naming
+
+## Action
+
+Use snake_case for file names
+
+## Evidence
+
+- Pattern in namingConventions.files
+- Observed in client-med/lib/
+
+---
+id: medintel-poc-instinct-function-naming
+trigger: "When defining a function"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: nhatcoi/medintel-poc
+---
+
+# Medintel Poc Instinct Function Naming
+
+## Action
+
+Use camelCase for function names
+
+## Evidence
+
+- Pattern in namingConventions.functions
+- Observed in client-med/lib/
+
+---
+id: medintel-poc-instinct-class-naming
+trigger: "When defining a class"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: nhatcoi/medintel-poc
+---
+
+# Medintel Poc Instinct Class Naming
+
+## Action
+
+Use PascalCase for class names
+
+## Evidence
+
+- Pattern in namingConventions.classes
+- Observed in client-med/lib/
+
+---
+id: medintel-poc-instinct-constant-naming
+trigger: "When defining a constant"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: nhatcoi/medintel-poc
+---
+
+# Medintel Poc Instinct Constant Naming
+
+## Action
+
+Use SCREAMING_SNAKE_CASE for constant names
+
+## Evidence
+
+- Pattern in namingConventions.constants
+- Observed in client-med/lib/core/constants/
+
+---
+id: medintel-poc-instinct-import-style
+trigger: "When importing modules"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: nhatcoi/medintel-poc
+---
+
+# Medintel Poc Instinct Import Style
+
+## Action
+
+Use relative import paths
+
+## Evidence
+
+- Pattern in importStyle
+- Observed in client-med/lib/
+
+---
+id: medintel-poc-instinct-export-style
+trigger: "When exporting modules"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: nhatcoi/medintel-poc
+---
+
+# Medintel Poc Instinct Export Style
+
+## Action
+
+Use named exports
+
+## Evidence
+
+- Pattern in exportStyle
+- Observed in client-med/lib/
+
+---
+id: medintel-poc-instinct-test-location
+trigger: "When adding or updating tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: nhatcoi/medintel-poc
+---
+
+# Medintel Poc Instinct Test Location
+
+## Action
+
+Place test files in client-med/test/ using *_test.dart naming
+
+## Evidence
+
+- Pattern in architecture.testLocation
+- Observed in client-med/test/*_test.dart
+
+---
+id: medintel-poc-instinct-test-feature-alignment
+trigger: "When enhancing or adding a feature"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: nhatcoi/medintel-poc
+---
+
+# Medintel Poc Instinct Test Feature Alignment
+
+## Action
+
+Add or update corresponding test files for the feature in client-med/test/
+
+## Evidence
+
+- Workflow feature-enhancement-with-ui-and-tests
+- Example commits updating tests
+
+---
+id: medintel-poc-instinct-git-conventional-commits
+trigger: "When writing a commit message"
+confidence: 0.9
+domain: git
+source: repo-analysis
+source_repo: nhatcoi/medintel-poc
+---
+
+# Medintel Poc Instinct Git Conventional Commits
+
+## Action
+
+Use the conventional commit format with 'feat:' prefix for feature enhancements
+
+## Evidence
+
+- Pattern in commits.prefixes
+- Example: 'feat: enhance medication logging...'
+
+---
+id: medintel-poc-instinct-git-commit-length
+trigger: "When writing a commit message"
+confidence: 0.7
+domain: git
+source: repo-analysis
+source_repo: nhatcoi/medintel-poc
+---
+
+# Medintel Poc Instinct Git Commit Length
+
+## Action
+
+Aim for commit messages around 76 characters in length
+
+## Evidence
+
+- Pattern in commits.averageLength
+
+---
+id: medintel-poc-instinct-feature-enhancement-workflow
+trigger: "When enhancing an existing feature (UI, data, validation, tests)"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: nhatcoi/medintel-poc
+---
+
+# Medintel Poc Instinct Feature Enhancement Workflow
+
+## Action
+
+Update UI and logic in lib/features/<feature>, data models in data/, widgets, constants/theme if needed, add/update tests in test/, and update README.md if relevant
+
+## Evidence
+
+- Workflow feature-enhancement-with-ui-and-tests
+- Observed in example commit sequences and files
+
