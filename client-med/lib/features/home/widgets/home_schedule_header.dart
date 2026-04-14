@@ -49,6 +49,8 @@ class HomeScheduleHeader extends StatelessWidget {
                     color: Colors.black,
                     fontWeight: FontWeight.w800,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),

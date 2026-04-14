@@ -94,9 +94,30 @@ def _normalize_medications(items: object) -> list[dict]:
 
 async def extract_prescription(image_bytes: bytes, mime_type: str = "image/jpeg") -> dict:
     """Extract structured prescription data from image bytes."""
+    
+    # --- Integration: Kaggle OCR Redirect ---
+    if settings.ocr_kaggle_url:
+        endpoint = f"{settings.ocr_kaggle_url.rstrip('/')}/ocr"
+        async with httpx.AsyncClient(timeout=120) as client:
+            files = {"file": ("scan.jpg", image_bytes, mime_type)}
+            try:
+                response = await client.post(endpoint, files=files)
+                if response.status_code == 200:
+                    data = response.json()
+                    return {
+                        "disease_name": data.get("diagnosis") or "",
+                        "prescribing_doctor": data.get("doctor_name"),
+                        "prescription_date": data.get("date"),
+                        "medications": _normalize_medications(data.get("medicines")),
+                    }
+                print(f"Kaggle OCR failed ({response.status_code}), falling back to vision LLM...")
+            except Exception as e:
+                print(f"Kaggle OCR unreachable: {e}. Falling back to vision LLM...")
+    # ----------------------------------------
+
     image_b64 = base64.b64encode(image_bytes).decode("utf-8")
     model_name = (settings.llm_vision_model or settings.llm_model).strip()
-
+    
     payload = {
         "model": model_name,
         "stream": False,

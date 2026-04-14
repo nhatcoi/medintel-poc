@@ -8,7 +8,14 @@ class Settings(BaseSettings):
     # Database
     database_url: str = "sqlite:///./medintel.db"
     create_tables_on_startup: bool = True
-    cors_origins: list[str] = ["*"]
+    cors_origins: list[str] = [
+        "http://localhost",
+        "http://localhost:5000",
+        "http://localhost:8000",
+        "http://127.0.0.1",
+        "http://127.0.0.1:8000",
+        "*",
+    ]
 
     # Security
     jwt_secret: str = "change-me-in-production"
@@ -27,6 +34,7 @@ class Settings(BaseSettings):
     llm_temperature: float = 0.3
     llm_timeout_seconds: float = 20.0
     llm_max_retries: int = 1
+    ocr_kaggle_url: str | None = None # e.g., https://your-tunnel.trycloudflare.com
 
     # Chat
     chat_history_limit: int = 8

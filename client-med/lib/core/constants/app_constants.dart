@@ -7,7 +7,7 @@ final class AppConstants {
   /// Đổi theo môi trường (dev/staging/prod).
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://127.0.0.1:8000',
+    defaultValue: 'http://localhost:8000',
   );
 
   static const Duration apiTimeout = Duration(seconds: 30);
