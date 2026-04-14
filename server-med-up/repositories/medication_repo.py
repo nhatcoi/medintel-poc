@@ -76,9 +76,7 @@ def search_medications(db: Session, q: str, limit: int = 20) -> list[Medication]
         .where(
             or_(
                 Medication.medication_name.ilike(keyword),
-                Medication.active_ingredient.ilike(keyword),
                 Medication.instructions.ilike(keyword),
-                Medication.side_effects.ilike(keyword),
                 Medication.notes.ilike(keyword),
             )
         )
@@ -99,8 +97,8 @@ def create_medication(
     start_date: date | None = None,
     end_date: date | None = None,
     notes: str | None = None,
-    prescribing_doctor: str | None = None,
-    prescription_date: date | None = None,
+    remaining_quantity: float | None = None,
+    quantity_unit: str | None = None,
 ) -> Medication:
     med = Medication(
         period_id=period_id,
@@ -111,8 +109,8 @@ def create_medication(
         start_date=start_date or date.today(),
         end_date=end_date,
         notes=notes,
-        prescribing_doctor=prescribing_doctor,
-        prescription_date=prescription_date,
+        remaining_quantity=remaining_quantity,
+        quantity_unit=quantity_unit,
         status="active",
     )
     db.add(med)
@@ -139,6 +137,85 @@ def soft_delete_medication(db: Session, med: Medication) -> Medication:
     return med
 
 
+def update_inventory(
+    db: Session,
+    med: Medication,
+    *,
+    remaining_quantity: float,
+    quantity_unit: str | None = None,
+    low_stock_threshold: float | None = None,
+) -> Medication:
+    med.remaining_quantity = max(0.0, float(remaining_quantity))
+    if quantity_unit is not None:
+        med.quantity_unit = quantity_unit
+    if low_stock_threshold is not None:
+        med.notes = _upsert_threshold_note(med.notes, low_stock_threshold)
+    db.commit()
+    db.refresh(med)
+    return med
+
+
+def consume_inventory(db: Session, med: Medication, amount: float = 1.0) -> Medication:
+    amount = max(0.0, float(amount))
+    current = float(med.remaining_quantity or 0.0)
+    med.remaining_quantity = max(0.0, current - amount)
+    db.commit()
+    db.refresh(med)
+    return med
+
+
+def low_stock_by_profile(db: Session, profile_id: uuid.UUID) -> list[dict]:
+    meds = get_medications_by_profile(db, profile_id)
+    out: list[dict] = []
+    for m in meds:
+        threshold = _extract_threshold_note(m.notes)
+        if threshold is None:
+            threshold = 5.0
+        rq = float(m.remaining_quantity) if m.remaining_quantity is not None else None
+        if rq is None:
+            continue
+        if rq <= threshold:
+            out.append(
+                {
+                    "medication_id": str(m.id),
+                    "medication_name": m.medication_name,
+                    "remaining_quantity": rq,
+                    "quantity_unit": m.quantity_unit,
+                    "low_stock_threshold": threshold,
+                }
+            )
+    return out
+
+
+def _extract_threshold_note(notes: str | None) -> float | None:
+    if not notes:
+        return None
+    marker = "[low_stock_threshold="
+    start = notes.find(marker)
+    if start < 0:
+        return None
+    end = notes.find("]", start)
+    if end < 0:
+        return None
+    raw = notes[start + len(marker) : end]
+    try:
+        return float(raw)
+    except ValueError:
+        return None
+
+
+def _upsert_threshold_note(notes: str | None, value: float) -> str:
+    marker = "[low_stock_threshold="
+    cleaned = (notes or "").strip()
+    start = cleaned.find(marker)
+    if start >= 0:
+        end = cleaned.find("]", start)
+        if end >= 0:
+            cleaned = f"{cleaned[:start]}{cleaned[end + 1:]}".strip()
+    token = f"[low_stock_threshold={float(value)}]"
+    return f"{cleaned} {token}".strip()
+
+
 def list_schedules(db: Session, medication_id: uuid.UUID) -> list[MedicationSchedule]:
     stmt = (
         select(MedicationSchedule)
@@ -146,6 +223,18 @@ def list_schedules(db: Session, medication_id: uuid.UUID) -> list[MedicationSche
         .order_by(MedicationSchedule.scheduled_time.asc())
     )
     return list(db.scalars(stmt).all())
+
+
+def list_schedules_by_profile(db: Session, profile_id: uuid.UUID) -> list[tuple[MedicationSchedule, Medication]]:
+    stmt = (
+        select(MedicationSchedule, Medication)
+        .join(Medication, MedicationSchedule.medication_id == Medication.id)
+        .join(TreatmentPeriod, Medication.period_id == TreatmentPeriod.id)
+        .join(MedicalRecord, TreatmentPeriod.record_id == MedicalRecord.id)
+        .where(MedicalRecord.profile_id == profile_id)
+        .order_by(MedicationSchedule.scheduled_time.asc(), Medication.medication_name.asc())
+    )
+    return list(db.execute(stmt).all())
 
 
 def get_schedule_by_id(db: Session, schedule_id: uuid.UUID) -> MedicationSchedule | None:
@@ -157,25 +246,11 @@ def create_schedule(
     *,
     medication_id: uuid.UUID,
     scheduled_time: time,
-    repeat_pattern: str | None = None,
-    repeat_days: str | None = None,
-    start_date: date | None = None,
-    end_date: date | None = None,
-    reminder_enabled: bool = True,
-    reminder_time_before: int | None = None,
-    reminder_sound: str | None = None,
     status: str | None = "active",
 ) -> MedicationSchedule:
     row = MedicationSchedule(
         medication_id=medication_id,
         scheduled_time=scheduled_time,
-        repeat_pattern=repeat_pattern,
-        repeat_days=repeat_days,
-        start_date=start_date,
-        end_date=end_date,
-        reminder_enabled=reminder_enabled,
-        reminder_time_before=reminder_time_before,
-        reminder_sound=reminder_sound,
         status=status,
     )
     db.add(row)
@@ -267,6 +342,25 @@ def list_logs_by_medication(
         select(MedicationLog)
         .join(MedicationSchedule, MedicationLog.schedule_id == MedicationSchedule.id)
         .where(MedicationSchedule.medication_id == medication_id)
+        .order_by(MedicationLog.scheduled_datetime.desc())
+    )
+    if dt_from is not None:
+        stmt = stmt.where(MedicationLog.scheduled_datetime >= dt_from)
+    if dt_to is not None:
+        stmt = stmt.where(MedicationLog.scheduled_datetime <= dt_to)
+    return list(db.scalars(stmt).all())
+
+
+def list_logs_by_profile(
+    db: Session,
+    profile_id: uuid.UUID,
+    *,
+    dt_from: datetime | None = None,
+    dt_to: datetime | None = None,
+) -> list[MedicationLog]:
+    stmt = (
+        select(MedicationLog)
+        .where(MedicationLog.profile_id == profile_id)
         .order_by(MedicationLog.scheduled_datetime.desc())
     )
     if dt_from is not None:

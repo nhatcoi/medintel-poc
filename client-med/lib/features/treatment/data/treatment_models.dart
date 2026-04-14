@@ -99,14 +99,20 @@ class MedicationScheduleItem {
     required this.scheduleId,
     required this.medicationId,
     required this.scheduledTime,
-    required this.reminderEnabled,
+    this.medicationName,
+    this.medicationDosage,
+    this.medicationFrequency,
+    this.medicationInstructions,
     this.status,
   });
 
   final String scheduleId;
   final String medicationId;
   final String scheduledTime;
-  final bool reminderEnabled;
+  final String? medicationName;
+  final String? medicationDosage;
+  final String? medicationFrequency;
+  final String? medicationInstructions;
   final String? status;
 
   factory MedicationScheduleItem.fromJson(Map<String, dynamic> json) {
@@ -114,7 +120,10 @@ class MedicationScheduleItem {
       scheduleId: (json['schedule_id'] ?? '').toString(),
       medicationId: (json['medication_id'] ?? '').toString(),
       scheduledTime: (json['scheduled_time'] ?? '').toString(),
-      reminderEnabled: json['reminder_enabled'] as bool? ?? true,
+      medicationName: json['medication_name']?.toString(),
+      medicationDosage: json['medication_dosage']?.toString(),
+      medicationFrequency: json['medication_frequency']?.toString(),
+      medicationInstructions: json['medication_instructions']?.toString(),
       status: json['status']?.toString(),
     );
   }

@@ -19,6 +19,9 @@ final class ApiPaths {
   static const String memory = '/api/v1/memory/';
 
   static const String treatmentMedications = '/api/v1/treatment/medications';
+  static const String treatmentSchedules = '/api/v1/treatment/schedules';
+  static const String treatmentLogs = '/api/v1/treatment/logs';
+  static const String treatmentMedicationsLowStock = '/api/v1/treatment/medications/low-stock';
   static const String treatmentMedicationsSearch = '/api/v1/treatment/medications/search';
   static const String treatmentAdherenceSummary =
       '/api/v1/treatment/adherence/summary';

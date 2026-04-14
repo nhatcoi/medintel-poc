@@ -17,24 +17,25 @@ class TreatmentRepository {
     );
     final raw = resp.data?['items'] ?? resp.data?['medications'];
     if (raw is! List) return const [];
-    final meds = raw
+    return raw
         .whereType<Map>()
         .map((e) => MedicationItem.fromJson(Map<String, dynamic>.from(e)))
         .toList();
-    final enriched = <MedicationItem>[];
-    for (final m in meds) {
-      try {
-        final schedules = await listSchedules(m.medicationId);
-        enriched.add(
-          m.copyWith(
-            scheduleTimes: schedules.map((s) => s.scheduledTime).toList(),
-          ),
-        );
-      } catch (_) {
-        enriched.add(m);
-      }
-    }
-    return enriched;
+  }
+
+  Future<List<MedicationScheduleItem>> listSchedulesByProfile(String profileId) async {
+    final resp = await _api.client.get(
+      ApiPaths.treatmentSchedules,
+      queryParameters: {'profile_id': profileId},
+      options: Options(receiveTimeout: const Duration(seconds: 30)),
+    );
+    final data = resp.data;
+    final raw = data is List ? data : (data is Map<String, dynamic> ? data['items'] : null);
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map>()
+        .map((e) => MedicationScheduleItem.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
   }
 
   Future<MedicationItem> createMedication({
@@ -81,6 +82,8 @@ class TreatmentRepository {
     String? frequency,
     String? instructions,
     String? status,
+    double? remainingQuantity,
+    String? quantityUnit,
     List<String>? scheduleTimes,
   }) async {
     final payload = <String, dynamic>{};
@@ -89,6 +92,8 @@ class TreatmentRepository {
     if (frequency != null) payload['frequency'] = frequency;
     if (instructions != null) payload['instructions'] = instructions;
     if (status != null) payload['status'] = status;
+    if (remainingQuantity != null) payload['remaining_quantity'] = remainingQuantity;
+    if (quantityUnit != null) payload['quantity_unit'] = quantityUnit;
     if (scheduleTimes != null) payload['schedule_times'] = scheduleTimes;
 
     final resp = await _api.client.patch<Map<String, dynamic>>(
@@ -97,6 +102,38 @@ class TreatmentRepository {
     );
     final data = resp.data;
     if (data == null) throw const FormatException('Empty medication response');
+    return MedicationItem.fromJson(data);
+  }
+
+  Future<MedicationItem> updateMedicationInventory({
+    required String medicationId,
+    required double remainingQuantity,
+    String? quantityUnit,
+    double? lowStockThreshold,
+  }) async {
+    final resp = await _api.client.patch<Map<String, dynamic>>(
+      '${ApiPaths.treatmentMedications}/$medicationId/inventory',
+      data: {
+        'remaining_quantity': remainingQuantity,
+        if (quantityUnit != null) 'quantity_unit': quantityUnit,
+        if (lowStockThreshold != null) 'low_stock_threshold': lowStockThreshold,
+      },
+    );
+    final data = resp.data;
+    if (data == null) throw const FormatException('Empty inventory response');
+    return MedicationItem.fromJson(data);
+  }
+
+  Future<MedicationItem> consumeMedication({
+    required String medicationId,
+    double amount = 1.0,
+  }) async {
+    final resp = await _api.client.post<Map<String, dynamic>>(
+      '${ApiPaths.treatmentMedications}/$medicationId/consume',
+      data: {'amount': amount},
+    );
+    final data = resp.data;
+    if (data == null) throw const FormatException('Empty consume response');
     return MedicationItem.fromJson(data);
   }
 
@@ -168,6 +205,20 @@ class TreatmentRepository {
         .toList();
   }
 
+  Future<List<MedicationLogItem>> listLogsByProfile(String profileId) async {
+    final resp = await _api.client.get(
+      ApiPaths.treatmentLogs,
+      queryParameters: {'profile_id': profileId},
+    );
+    final data = resp.data;
+    final raw = data is List ? data : (data is Map<String, dynamic> ? data['items'] : null);
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map>()
+        .map((e) => MedicationLogItem.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+
   Future<MedicationLogItem> updateMedicationLog({
     required String medicationId,
     required String logId,
@@ -210,8 +261,6 @@ class TreatmentRepository {
       '${ApiPaths.treatmentMedications}/$medicationId/schedules',
       data: {
         'scheduled_time': scheduledTime,
-        'repeat_pattern': 'daily',
-        'reminder_enabled': true,
         'status': 'active',
       },
     );

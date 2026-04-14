@@ -16,6 +16,9 @@ from schemas.treatment import (
     MedicationSearchItem,
     MedicationSearchResponse,
     MedicationUpdate,
+    MedicationInventoryUpdate,
+    MedicationConsumeRequest,
+    LowStockItem,
     MissedDoseCheckResponse,
     MissedDoseItem,
     NextDoseResponse,
@@ -38,16 +41,20 @@ def _to_med_read(m) -> MedicationRead:
         instructions=m.instructions,
         status=m.status,
         period_id=str(m.period_id),
+        remaining_quantity=float(m.remaining_quantity) if m.remaining_quantity is not None else None,
+        quantity_unit=m.quantity_unit,
     )
 
 
-def _to_schedule_read(s, medication_name: str | None = None) -> ScheduleRead:
+def _to_schedule_read(s, medication_name: str | None = None, medication_dosage: str | None = None, medication_frequency: str | None = None, medication_instructions: str | None = None) -> ScheduleRead:
     return ScheduleRead(
         schedule_id=str(s.id),
         medication_id=str(s.medication_id),
         medication_name=medication_name,
+        medication_dosage=medication_dosage,
+        medication_frequency=medication_frequency,
+        medication_instructions=medication_instructions,
         scheduled_time=s.scheduled_time,
-        reminder_enabled=s.reminder_enabled,
         status=s.status,
     )
 
@@ -73,7 +80,6 @@ def search_medications(db: DbSession, q: str = Query(..., min_length=1), limit: 
             MedicationSearchItem(
                 medication_id=str(m.id),
                 medication_name=m.medication_name,
-                active_ingredient=m.active_ingredient,
                 indications=m.instructions,
             )
             for m in items
@@ -89,6 +95,25 @@ def get_medications(db: DbSession, profile_id: str = Query(...)):
         raise HTTPException(status_code=400, detail="Invalid UUID") from exc
     meds = medication_repo.get_medications_by_profile(db, pid)
     return MedicationListResponse(medications=[_to_med_read(m) for m in meds])
+
+
+@router.get("/schedules", response_model=list[ScheduleRead])
+def get_schedules_by_profile(db: DbSession, profile_id: str = Query(...)):
+    try:
+        pid = uuid.UUID(profile_id.strip())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Invalid profile UUID") from exc
+    rows = medication_repo.list_schedules_by_profile(db, pid)
+    return [
+        _to_schedule_read(
+            s,
+            medication_name=m.medication_name,
+            medication_dosage=m.dosage,
+            medication_frequency=m.frequency,
+            medication_instructions=m.instructions,
+        )
+        for s, m in rows
+    ]
 
 
 @router.post("/medications", response_model=MedicationRead)
@@ -117,6 +142,8 @@ def create_medication(body: MedicationCreate, db: DbSession):
         start_date=body.start_date,
         end_date=body.end_date,
         notes=body.notes,
+        remaining_quantity=body.remaining_quantity,
+        quantity_unit=body.quantity_unit,
     )
     return _to_med_read(med)
 
@@ -143,8 +170,52 @@ def update_medication(medication_id: str, body: MedicationUpdate, db: DbSession)
         end_date=body.end_date,
         status=body.status,
         notes=body.notes,
+        remaining_quantity=body.remaining_quantity,
+        quantity_unit=body.quantity_unit,
     )
     return _to_med_read(updated)
+
+
+@router.patch("/medications/{medication_id}/inventory", response_model=MedicationRead)
+def update_inventory(medication_id: str, body: MedicationInventoryUpdate, db: DbSession):
+    try:
+        mid = uuid.UUID(medication_id.strip())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Invalid medication UUID") from exc
+    med = medication_repo.get_by_id(db, mid)
+    if med is None:
+        raise HTTPException(status_code=404, detail="Medication not found")
+    updated = medication_repo.update_inventory(
+        db,
+        med,
+        remaining_quantity=body.remaining_quantity,
+        quantity_unit=body.quantity_unit,
+        low_stock_threshold=body.low_stock_threshold,
+    )
+    return _to_med_read(updated)
+
+
+@router.post("/medications/{medication_id}/consume", response_model=MedicationRead)
+def consume_inventory(medication_id: str, body: MedicationConsumeRequest, db: DbSession):
+    try:
+        mid = uuid.UUID(medication_id.strip())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Invalid medication UUID") from exc
+    med = medication_repo.get_by_id(db, mid)
+    if med is None:
+        raise HTTPException(status_code=404, detail="Medication not found")
+    updated = medication_repo.consume_inventory(db, med, amount=body.amount)
+    return _to_med_read(updated)
+
+
+@router.get("/medications/low-stock", response_model=list[LowStockItem])
+def get_low_stock(db: DbSession, profile_id: str = Query(...)):
+    try:
+        pid = uuid.UUID(profile_id.strip())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Invalid profile UUID") from exc
+    rows = medication_repo.low_stock_by_profile(db, pid)
+    return [LowStockItem(**row) for row in rows]
 
 
 @router.delete("/medications/{medication_id}")
@@ -170,7 +241,16 @@ def list_schedules(medication_id: str, db: DbSession):
     if med is None:
         raise HTTPException(status_code=404, detail="Medication not found")
     rows = medication_repo.list_schedules(db, mid)
-    return [_to_schedule_read(s, medication_name=med.medication_name) for s in rows]
+    return [
+        _to_schedule_read(
+            s,
+            medication_name=med.medication_name,
+            medication_dosage=med.dosage,
+            medication_frequency=med.frequency,
+            medication_instructions=med.instructions,
+        )
+        for s in rows
+    ]
 
 
 @router.post("/medications/{medication_id}/schedules", response_model=ScheduleRead)
@@ -186,16 +266,15 @@ def create_schedule(medication_id: str, body: ScheduleCreate, db: DbSession):
         db,
         medication_id=mid,
         scheduled_time=body.scheduled_time,
-        repeat_pattern=body.repeat_pattern,
-        repeat_days=body.repeat_days,
-        start_date=body.start_date,
-        end_date=body.end_date,
-        reminder_enabled=body.reminder_enabled,
-        reminder_time_before=body.reminder_time_before,
-        reminder_sound=body.reminder_sound,
         status=body.status,
     )
-    return _to_schedule_read(row, medication_name=med.medication_name)
+    return _to_schedule_read(
+        row,
+        medication_name=med.medication_name,
+        medication_dosage=med.dosage,
+        medication_frequency=med.frequency,
+        medication_instructions=med.instructions,
+    )
 
 
 @router.patch("/medications/{medication_id}/schedules/{schedule_id}", response_model=ScheduleRead)
@@ -215,16 +294,44 @@ def update_schedule(medication_id: str, schedule_id: str, body: ScheduleUpdate, 
         db,
         row,
         scheduled_time=body.scheduled_time,
-        repeat_pattern=body.repeat_pattern,
-        repeat_days=body.repeat_days,
-        start_date=body.start_date,
-        end_date=body.end_date,
-        reminder_enabled=body.reminder_enabled,
-        reminder_time_before=body.reminder_time_before,
-        reminder_sound=body.reminder_sound,
         status=body.status,
     )
-    return _to_schedule_read(updated, medication_name=med.medication_name)
+    return _to_schedule_read(
+        updated,
+        medication_name=med.medication_name,
+        medication_dosage=med.dosage,
+        medication_frequency=med.frequency,
+        medication_instructions=med.instructions,
+    )
+
+
+@router.get("/logs", response_model=list[LogRead])
+def list_logs_by_profile(
+    db: DbSession,
+    profile_id: str = Query(...),
+    dt_from: str | None = Query(None),
+    dt_to: str | None = Query(None),
+):
+    try:
+        pid = uuid.UUID(profile_id.strip())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Invalid profile UUID") from exc
+    parsed_from = datetime.fromisoformat(dt_from) if dt_from else None
+    parsed_to = datetime.fromisoformat(dt_to) if dt_to else None
+    rows = medication_repo.list_logs_by_profile(db, pid, dt_from=parsed_from, dt_to=parsed_to)
+
+    out: list[LogRead] = []
+    for r in rows:
+        sch = medication_repo.get_schedule_by_id(db, r.schedule_id)
+        med_name = None
+        med_id = None
+        if sch is not None:
+            med = medication_repo.get_by_id(db, sch.medication_id)
+            if med is not None:
+                med_name = med.medication_name
+                med_id = str(med.id)
+        out.append(_to_log_read(r, medication_id=med_id, medication_name=med_name))
+    return out
 
 
 @router.delete("/medications/{medication_id}/schedules/{schedule_id}")
