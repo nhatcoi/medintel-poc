@@ -13,8 +13,13 @@ class AiChatMessageTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return switch (item) {
-      AiChatAssistantTurn(:final body, :final timeLabel, :final callout) =>
-        _AssistantBlock(body: body, timeLabel: timeLabel, callout: callout),
+      AiChatAssistantTurn(:final body, :final timeLabel, :final callout, :final toolSummaries) =>
+        _AssistantBlock(
+          body: body,
+          timeLabel: timeLabel,
+          callout: callout,
+          toolSummaries: toolSummaries,
+        ),
       AiChatUserTurn(:final body, :final timeLabel) => _UserBlock(body: body, timeLabel: timeLabel),
     };
   }
@@ -25,11 +30,13 @@ class _AssistantBlock extends StatelessWidget {
     required this.body,
     required this.timeLabel,
     this.callout,
+    this.toolSummaries = const [],
   });
 
   final String body;
   final String timeLabel;
   final String? callout;
+  final List<String> toolSummaries;
 
   @override
   Widget build(BuildContext context) {
@@ -147,6 +154,30 @@ class _AssistantBlock extends StatelessWidget {
                             ),
                           ),
                         ),
+                      ),
+                    ],
+                    if (toolSummaries.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final summary in toolSummaries)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: VitalisColors.primaryContainer.withValues(alpha: 0.5),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                summary,
+                                style: text.bodySmall?.copyWith(
+                                  color: VitalisColors.onSecondaryContainer,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ],
                   ],

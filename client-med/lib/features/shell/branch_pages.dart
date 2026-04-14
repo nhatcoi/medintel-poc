@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../adherence/adherence_placeholder.dart';
 import '../ai_chat/ai_chat_page.dart';
+import '../history/history_page.dart';
 import '../home/home_page.dart';
 import '../prescription_scan/prescription_scan_page.dart';
 
@@ -34,6 +34,6 @@ class HistoryBranchPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const AdherencePlaceholder();
+    return const HistoryPage();
   }
 }

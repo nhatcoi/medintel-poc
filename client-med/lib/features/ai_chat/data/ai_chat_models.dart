@@ -39,12 +39,14 @@ class AiChatAssistantTurn extends AiChatItem {
     required this.body,
     required this.timeLabel,
     this.callout,
+    this.toolSummaries = const [],
     this.suggestedActions = const [],
   });
 
   final String body;
   final String timeLabel;
   final String? callout;
+  final List<String> toolSummaries;
   final List<SuggestedChatAction> suggestedActions;
 }
 

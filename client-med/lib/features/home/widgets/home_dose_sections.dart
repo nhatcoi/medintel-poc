@@ -2,15 +2,33 @@ import 'package:flutter/material.dart';
 
 import '../data/home_schedule_models.dart';
 
+String homeDoseActionKey({
+  required String medicationId,
+  required String timeLabel,
+  required DateTime selectedDate,
+}) {
+  final d = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+  return '$medicationId|${d.toIso8601String()}|$timeLabel';
+}
+
 class HomeDoseSectionWidget extends StatelessWidget {
   const HomeDoseSectionWidget({
     super.key,
     required this.section,
+    required this.selectedDate,
+    required this.pendingDoseKeys,
     required this.onLogDose,
   });
 
   final HomeDoseSection section;
-  final Future<void> Function({required String medicationId, required String status}) onLogDose;
+  final DateTime selectedDate;
+  final Set<String> pendingDoseKeys;
+  final Future<void> Function({
+    required String medicationId,
+    required String status,
+    String? scheduledTime,
+    DateTime? scheduledDate,
+  }) onLogDose;
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +79,19 @@ class HomeDoseSectionWidget extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           for (final item in section.items)
-            _HomeMedDoseCard(item: item, onLogDose: onLogDose),
+            _HomeMedDoseCard(
+              item: item,
+              onLogDose: onLogDose,
+              sectionTimeLabel: section.timeLabel,
+              selectedDate: selectedDate,
+              isLoading: pendingDoseKeys.contains(
+                homeDoseActionKey(
+                  medicationId: item.medicationId,
+                  timeLabel: section.timeLabel,
+                  selectedDate: selectedDate,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -72,10 +102,21 @@ class _HomeMedDoseCard extends StatelessWidget {
   const _HomeMedDoseCard({
     required this.item,
     required this.onLogDose,
+    required this.sectionTimeLabel,
+    required this.selectedDate,
+    required this.isLoading,
   });
 
   final HomeDoseSectionItem item;
-  final Future<void> Function({required String medicationId, required String status}) onLogDose;
+  final String sectionTimeLabel;
+  final DateTime selectedDate;
+  final bool isLoading;
+  final Future<void> Function({
+    required String medicationId,
+    required String status,
+    String? scheduledTime,
+    DateTime? scheduledDate,
+  }) onLogDose;
 
   @override
   Widget build(BuildContext context) {
@@ -92,8 +133,13 @@ class _HomeMedDoseCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        if (!isTaken) {
-          onLogDose(medicationId: item.medicationId, status: 'taken');
+        if (!isTaken && !isLoading) {
+          onLogDose(
+            medicationId: item.medicationId,
+            status: 'taken',
+            scheduledTime: sectionTimeLabel,
+            scheduledDate: selectedDate,
+          );
         }
       },
       child: Container(
@@ -123,18 +169,33 @@ class _HomeMedDoseCard extends StatelessWidget {
                     : null,
               ),
               child: Center(
-                child: isTaken
-                    ? Icon(Icons.check_rounded, color: scheme.onPrimary, size: 24)
-                    : isMissed
-                        ? Icon(Icons.close_rounded, color: scheme.onError, size: 24)
-                        : Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: scheme.primary,
-                            ),
+                child: isLoading
+                    ? SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            isTaken
+                                ? scheme.onPrimary
+                                : isMissed
+                                    ? scheme.onError
+                                    : scheme.primary,
                           ),
+                        ),
+                      )
+                    : isTaken
+                        ? Icon(Icons.check_rounded, color: scheme.onPrimary, size: 24)
+                        : isMissed
+                            ? Icon(Icons.close_rounded, color: scheme.onError, size: 24)
+                            : Container(
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: scheme.primary,
+                                ),
+                              ),
               ),
             ),
             const SizedBox(width: 14),
@@ -182,7 +243,17 @@ class _HomeMedDoseCard extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: scheme.surfaceContainerHigh,
               ),
-              child: Icon(Icons.chevron_right_rounded, size: 18, color: scheme.onSurfaceVariant.withValues(alpha: 0.4)),
+              child: isLoading
+                  ? Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          scheme.primary.withValues(alpha: 0.8),
+                        ),
+                      ),
+                    )
+                  : Icon(Icons.chevron_right_rounded, size: 18, color: scheme.onSurfaceVariant.withValues(alpha: 0.4)),
             ),
           ],
         ),

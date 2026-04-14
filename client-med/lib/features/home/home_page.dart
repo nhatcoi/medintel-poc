@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/theme/ui_tokens.dart';
 import '../../providers/providers.dart';
 import '../medication/widgets/add_medication_sheet.dart';
 import '../medication/widgets/medication_search_sheet.dart';
@@ -25,6 +26,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   static const int _totalDays = _dayRange * 2;
   static const double _dayItemWidth = 56;
   String? _boundProfileId;
+  final Set<String> _pendingDoseKeys = <String>{};
 
   @override
   void initState() {
@@ -75,15 +77,38 @@ class _HomePageState extends ConsumerState<HomePage> {
   Future<void> _logDose({
     required String medicationId,
     required String status,
+    String? scheduledTime,
+    DateTime? scheduledDate,
   }) async {
     final profileId = ref.read(activeProfileIdProvider);
     if (profileId == null || profileId.isEmpty) return;
-    await ref.read(treatmentProvider.notifier).logDose(
-          profileId: profileId,
-          medicationId: medicationId,
-          status: status,
-        );
-    await _reload();
+    final effectiveDate = scheduledDate ?? _selectedDate;
+    final effectiveTime = (scheduledTime ?? '').trim();
+    final actionKey = effectiveTime.isEmpty
+        ? null
+        : homeDoseActionKey(
+            medicationId: medicationId,
+            timeLabel: effectiveTime,
+            selectedDate: effectiveDate,
+          );
+    if (actionKey != null) {
+      setState(() => _pendingDoseKeys.add(actionKey));
+    }
+    try {
+      await ref.read(treatmentProvider.notifier).logDose(
+            profileId: profileId,
+            medicationId: medicationId,
+            status: status,
+            scheduledTime: scheduledTime,
+            scheduledDate: scheduledDate,
+          );
+      if (!mounted) return;
+      await _reload();
+    } finally {
+      if (mounted && actionKey != null) {
+        setState(() => _pendingDoseKeys.remove(actionKey));
+      }
+    }
   }
 
   Future<void> _openAddMedicationSheet() async {
@@ -159,7 +184,12 @@ class _HomePageState extends ConsumerState<HomePage> {
             if (state.error != null)
               SliverToBoxAdapter(
                 child: Container(
-                  margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  margin: const EdgeInsets.fromLTRB(
+                    UiTokens.pagePadding,
+                    UiTokens.chipGap,
+                    UiTokens.pagePadding,
+                    UiTokens.chipGap,
+                  ),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: scheme.errorContainer,
@@ -223,6 +253,8 @@ class _HomePageState extends ConsumerState<HomePage> {
               SliverToBoxAdapter(
                 child: HomeDoseSectionWidget(
                   section: section,
+                  selectedDate: _selectedDate,
+                  pendingDoseKeys: _pendingDoseKeys,
                   onLogDose: _logDose,
                 ),
               ),

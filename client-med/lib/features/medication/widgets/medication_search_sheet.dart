@@ -83,7 +83,7 @@ class _MedicationSearchSheetState extends ConsumerState<MedicationSearchSheet> {
         setState(() => _items = out);
       } else {
         // fallback: ask agentic to synthesize one suggestion when DB returns empty.
-        final profileId = ref.read(authProvider).user?.id;
+        final profileId = ref.read(activeProfileIdProvider);
         final prompt = '''
 Tìm thuốc "$q". Trả về JSON duy nhất:
 {"name":"", "summary":"", "dosage":"", "instructions":"", "schedule_time":"08:00"}
@@ -207,14 +207,3 @@ Map<String, dynamic>? _tryParseFirstJson(String text) {
   return null;
 }
 
-String? _extractDosage(String text) {
-  final reg = RegExp(r'(\d+\s?(mg|g|ml|viên|vien))', caseSensitive: false);
-  return reg.firstMatch(text)?.group(0);
-}
-
-String? _extractInstruction(String text) {
-  final lower = text.toLowerCase();
-  if (lower.contains('sau ăn') || lower.contains('sau an')) return 'Sau ăn';
-  if (lower.contains('trước ăn') || lower.contains('truoc an')) return 'Trước ăn';
-  return null;
-}

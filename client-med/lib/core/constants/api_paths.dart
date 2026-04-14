@@ -12,8 +12,11 @@ final class ApiPaths {
   static const String profileOnboarding = '/api/v1/profiles/onboarding';
 
   static const String chatMessage = '/api/v1/chat/message';
+  static const String chatSuggestedQuestions = '/api/v1/chat/suggested-questions';
   static const String chatWelcomeHints = '/api/v1/chat/welcome-hints';
   static const String ragSearch = '/api/v1/rag/search';
+  static const String medicalRecords = '/api/v1/medical-records/';
+  static const String memory = '/api/v1/memory/';
 
   static const String treatmentMedications = '/api/v1/treatment/medications';
   static const String treatmentMedicationsSearch = '/api/v1/treatment/medications/search';

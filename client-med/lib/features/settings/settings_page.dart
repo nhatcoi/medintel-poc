@@ -184,6 +184,26 @@ class SettingsPage extends ConsumerWidget {
           const SizedBox(height: 16),
           const LocalDataJsonPanel(refreshInterval: Duration(seconds: 5)),
           const SizedBox(height: 16),
+          Text(
+            'Dữ liệu y tế',
+            style: text.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.description_outlined),
+            title: const Text('Hồ sơ bệnh án'),
+            subtitle: const Text('Xem dữ liệu từ /api/v1/medical-records/'),
+            onTap: () => context.push('/medical-records'),
+          ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.psychology_outlined),
+            title: const Text('Memory'),
+            subtitle: const Text('Xem/thêm dữ liệu từ /api/v1/memory/'),
+            onTap: () => context.push('/memory'),
+          ),
+          const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: () => _clearAllData(context, ref),
             icon: const Icon(Icons.delete_forever_outlined),
