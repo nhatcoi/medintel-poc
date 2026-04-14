@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:med_intel_client/l10n/app_localizations.dart';
 
 import '../../core/theme/vitalis_colors.dart';
@@ -13,6 +14,26 @@ import 'widgets/ai_chat_message_tile.dart';
 import 'widgets/ai_chat_quick_replies.dart';
 import 'widgets/ai_chat_typing_indicator.dart';
 import 'widgets/ai_chat_welcome_block.dart';
+
+String? routeFromQuickPrompt(String prompt) {
+  final p = prompt.trim().toLowerCase();
+  if (p.isEmpty) return null;
+
+  if (p.startsWith('open:') || p.startsWith('/open')) {
+    if (p.contains('history')) return '/history';
+    if (p.contains('home')) return '/home';
+    if (p.contains('scan')) return '/scan';
+    if (p.contains('care')) return '/care';
+    if (p.contains('memory')) return '/memory';
+    if (p.contains('medical')) return '/medical-records';
+  }
+
+  if (p.contains('lịch sử') || p.contains('history')) return '/history';
+  if (p.contains('quét') || p.contains('scan')) return '/scan';
+  if (p.contains('trang chủ') || p.contains('home')) return '/home';
+  if (p.contains('chăm sóc') || p.contains('caregiver') || p.contains('care')) return '/care';
+  return null;
+}
 
 class AiChatPage extends ConsumerStatefulWidget {
   const AiChatPage({super.key});
@@ -32,6 +53,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
   String? _chatSessionId;
   /// Gợi ý từ GET /chat/welcome-hints; null = chưa tải hoặc lỗi (dùng fallback l10n).
   List<String>? _welcomeHintsFromApi;
+  List<SuggestedChatAction> _initialSuggestedActions = const [];
   String? _boundProfileId;
 
   @override
@@ -40,7 +62,10 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
     _composer = TextEditingController();
     _scroll = ScrollController();
     _repo = ChatRepository(ApiService());
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadWelcomeHints());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadWelcomeHints();
+      _loadSuggestedQuestions();
+    });
   }
 
   Future<void> _loadWelcomeHints() async {
@@ -50,6 +75,16 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
     if (!mounted) return;
     setState(() {
       _welcomeHintsFromApi = hints.isNotEmpty ? hints : null;
+    });
+  }
+
+  Future<void> _loadSuggestedQuestions() async {
+    final id = ref.read(activeProfileIdProvider);
+    if (id == null || id.trim().isEmpty) return;
+    final questions = await _repo.fetchSuggestedQuestions(id);
+    if (!mounted) return;
+    setState(() {
+      _initialSuggestedActions = questions;
     });
   }
 
@@ -113,6 +148,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
           timeLabel: _nowLabel(),
           suggestedActions: result.suggestedActions,
           callout: callout,
+          toolSummaries: summaries,
         ));
       });
     } catch (_) {
@@ -169,7 +205,11 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
       _chatSessionId = null;
       _messages.clear();
       _welcomeHintsFromApi = null;
-      WidgetsBinding.instance.addPostFrameCallback((_) => _loadWelcomeHints());
+      _initialSuggestedActions = const [];
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadWelcomeHints();
+        _loadSuggestedQuestions();
+      });
     }
     final l10n = AppLocalizations.of(context);
     return ColoredBox(
@@ -207,7 +247,12 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                 if (_showQuickReplies)
                   AiChatQuickReplies(
                     actions: _lastSuggestedActions,
-                    onSelected: _sendMessage,
+                    onSelected: _handleQuickAction,
+                  ),
+                if (!_showQuickReplies && _messages.isEmpty && _initialSuggestedActions.isNotEmpty)
+                  AiChatQuickReplies(
+                    actions: _initialSuggestedActions,
+                    onSelected: _handleQuickAction,
                   ),
               ],
             ),
@@ -220,5 +265,32 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
         ],
       ),
     );
+  }
+
+  void _handleQuickAction(String prompt) {
+    if (_tryNavigateFromPrompt(prompt)) return;
+    _sendMessage(prompt);
+  }
+
+  bool _tryNavigateFromPrompt(String prompt) {
+    final route = routeFromQuickPrompt(prompt);
+    if (route == null) return false;
+    final routeLabel = switch (route) {
+      '/history' => 'Lịch sử',
+      '/home' => 'Trang chủ',
+      '/scan' => 'Quét đơn',
+      '/care' => 'Chăm sóc',
+      '/memory' => 'Memory',
+      '/medical-records' => 'Hồ sơ bệnh án',
+      _ => route,
+    };
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Đang mở: $routeLabel'),
+        duration: const Duration(milliseconds: 900),
+      ),
+    );
+    context.go(route);
+    return true;
   }
 }

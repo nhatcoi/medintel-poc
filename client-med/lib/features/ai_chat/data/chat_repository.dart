@@ -25,6 +25,35 @@ class ChatRepository {
 
   final ApiService _api;
 
+  Future<List<SuggestedChatAction>> fetchSuggestedQuestions(String profileId) async {
+    final id = profileId.trim();
+    if (id.isEmpty) return const [];
+
+    try {
+      final resp = await _api.client.get<Map<String, dynamic>>(
+        ApiPaths.chatSuggestedQuestions,
+        queryParameters: {'profile_id': id},
+        options: Options(receiveTimeout: const Duration(seconds: 30)),
+      );
+      final raw = resp.data?['questions'];
+      if (raw is! List<dynamic>) return const [];
+      return raw
+          .map((e) => e.toString().trim())
+          .where((s) => s.isNotEmpty)
+          .take(12)
+          .map(
+            (q) => SuggestedChatAction(
+              label: q,
+              prompt: q,
+              kind: SuggestedActionKind.knowledge,
+            ),
+          )
+          .toList(growable: false);
+    } catch (_) {
+      return const [];
+    }
+  }
+
   /// Gợi ý dòng chữ chạy khi mở chat — server gom thuốc/log/bộ nhớ + LLM (hoặc template).
   Future<List<String>> fetchWelcomeHints(String profileId) async {
     final id = profileId.trim();

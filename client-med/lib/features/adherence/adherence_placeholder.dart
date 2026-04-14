@@ -20,8 +20,9 @@ class _AdherencePlaceholderState extends ConsumerState<AdherencePlaceholder> {
   }
 
   Future<void> _reload() async {
-    final profileId = ref.read(authProvider).user?.id;
+    final profileId = ref.read(activeProfileIdProvider);
     if (profileId == null || profileId.isEmpty) return;
+    await ref.read(treatmentProvider.notifier).loadMedications(profileId);
     await ref.read(treatmentProvider.notifier).loadSummary(profileId);
   }
 
@@ -47,6 +48,27 @@ class _AdherencePlaceholderState extends ConsumerState<AdherencePlaceholder> {
               _tile(context, l10n.adherenceMissedLabel, summary.missed.toString()),
               _tile(context, l10n.adherenceSkippedLabel, summary.skipped.toString()),
               _tile(context, l10n.adherenceLateLabel, summary.late.toString()),
+              const SizedBox(height: 12),
+              Text(
+                'Lich su gan day',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              if (state.logs.isEmpty)
+                Text(
+                  l10n.adherenceNoData,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              for (final log in state.logs.take(30))
+                Card(
+                  child: ListTile(
+                    title: Text(log.medicationName),
+                    subtitle: Text(log.scheduledDatetime.toLocal().toString()),
+                    trailing: Text(log.status),
+                  ),
+                ),
             ],
           ],
         ),

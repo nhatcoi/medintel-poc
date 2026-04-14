@@ -116,15 +116,38 @@ class TreatmentNotifier extends StateNotifier<TreatmentState> {
     required String profileId,
     required String medicationId,
     required String status,
+    String? scheduledTime,
+    DateTime? scheduledDate,
     String? notes,
   }) async {
     await _repo.createMedicationLog(
       medicationId: medicationId,
       profileId: profileId,
       status: status,
+      scheduledTime: scheduledTime,
+      scheduledDate: scheduledDate,
       notes: notes,
     );
-    await loadLogs(medicationId);
+    // Reload full dataset to avoid transient UI flicker where `logs`
+    // gets overwritten by a single-medication subset.
+    await loadMedications(profileId);
+    await loadSummary(profileId);
+  }
+
+  Future<void> updateLogStatus({
+    required String profileId,
+    required String medicationId,
+    required String logId,
+    required String status,
+    String? notes,
+  }) async {
+    await _repo.updateMedicationLog(
+      medicationId: medicationId,
+      logId: logId,
+      status: status,
+      notes: notes,
+    );
+    await loadMedications(profileId);
     await loadSummary(profileId);
   }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:med_intel_client/l10n/app_localizations.dart';
 
+import '../../../core/theme/ui_tokens.dart';
 import '../../../core/theme/vitalis_colors.dart';
 import '../data/ai_chat_models.dart';
 
@@ -24,7 +25,7 @@ class AiChatQuickReplies extends StatelessWidget {
     final other = actions.where((a) => a.kind == SuggestedActionKind.other).toList();
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, UiTokens.chipGap),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -53,12 +54,12 @@ class _QuickReplySection extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: UiTokens.sectionGap),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 6),
+            padding: const EdgeInsets.only(left: 4, bottom: UiTokens.chipGap),
             child: Text(
               title,
               style: text.labelSmall?.copyWith(
@@ -69,25 +70,38 @@ class _QuickReplySection extends StatelessWidget {
             ),
           ),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: UiTokens.chipGap,
+            runSpacing: UiTokens.chipGap,
             children: [
               for (final action in actions)
                 Material(
                   color: VitalisColors.secondaryContainer,
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: BorderRadius.circular(UiTokens.chipRadius),
                   child: InkWell(
                     onTap: () => onSelected?.call(action.prompt),
-                    borderRadius: BorderRadius.circular(999),
+                    borderRadius: BorderRadius.circular(UiTokens.chipRadius),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                      child: Text(
-                        action.label,
-                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                              color: VitalisColors.onSecondaryContainer,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
-                            ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _isNavigationPrompt(action.prompt)
+                                ? Icons.open_in_new_rounded
+                                : Icons.chat_bubble_outline_rounded,
+                            size: 14,
+                            color: VitalisColors.onSecondaryContainer,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            action.label,
+                            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                  color: VitalisColors.onSecondaryContainer,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -97,5 +111,20 @@ class _QuickReplySection extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  bool _isNavigationPrompt(String prompt) {
+    final p = prompt.trim().toLowerCase();
+    if (p.startsWith('open:') || p.startsWith('/open')) return true;
+    return p.contains('lịch sử') ||
+        p.contains('history') ||
+        p.contains('trang chủ') ||
+        p.contains('home') ||
+        p.contains('quét') ||
+        p.contains('scan') ||
+        p.contains('chăm sóc') ||
+        p.contains('care') ||
+        p.contains('memory') ||
+        p.contains('medical');
   }
 }
