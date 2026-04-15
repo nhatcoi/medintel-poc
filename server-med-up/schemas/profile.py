@@ -54,6 +54,19 @@ class ProfileRead(BaseModel):
     created_at: datetime
 
 
+class ProfileUpdate(BaseModel):
+    full_name: str | None = None
+    date_of_birth: date | None = None
+    role: str | None = None
+    email: str | None = None
+    phone_number: str | None = None
+    emergency_contact: str | None = None
+
+
+class ProfileListResponse(BaseModel):
+    items: list[ProfileRead] = Field(default_factory=list)
+
+
 class DeviceSetup(BaseModel):
     profile_id: str
     device_label: str | None = None

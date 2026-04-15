@@ -7,13 +7,12 @@ import uuid
 from sqlalchemy.orm import Session
 
 from models.agent_context import PatientAgentContext
-from repositories import medication_repo, memory_repo, medical_repo
+from repositories import medication_repo, medical_repo
 
 
 def build_snapshot_markdown(db: Session, profile_id: uuid.UUID) -> str:
     meds = medication_repo.get_medications_by_profile(db, profile_id)
     records = medical_repo.get_by_profile(db, profile_id)
-    memory = memory_repo.get_all(db, profile_id)
 
     parts: list[str] = []
 
@@ -26,11 +25,6 @@ def build_snapshot_markdown(db: Session, profile_id: uuid.UUID) -> str:
         parts.append("## Tu thuoc")
         for m in meds:
             parts.append(f"- {m.medication_name}: {m.dosage or ''} / {m.frequency or ''}")
-
-    if memory:
-        parts.append("## Bo nho AI")
-        for k, v in memory.items():
-            parts.append(f"- {k}: {v}")
 
     return "\n".join(parts) or "(khong co du lieu)"
 

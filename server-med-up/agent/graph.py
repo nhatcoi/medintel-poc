@@ -36,6 +36,8 @@ def _route_after_reasoning(state: PatientState) -> str:
 
 
 def _route_after_tools(state: PatientState) -> str:
+    if state.get("pending_write_action"):
+        return "safety_guard"
     return "reasoning"
 
 

@@ -1,0 +1,147 @@
+{
+  "version": "1.0",
+  "intent_groups": {
+    "drug_info": [
+      "drug_info_general",
+      "drug_composition",
+      "drug_brand_generic",
+      "storage_instructions",
+      "expiry_check",
+      "temperature_requirement",
+      "humidity_light_sensitivity"
+    ],
+    "adherence": [
+      "check_med_schedule",
+      "missed_dose_guidance",
+      "skip_dose_guidance",
+      "treatment_tracking",
+      "treatment_compliance_tips",
+      "treatment_duration",
+      "treatment_effectiveness"
+    ],
+    "dose_timing": [
+      "check_dose_amount",
+      "dose_frequency",
+      "dose_time_change",
+      "dose_before_after_meal",
+      "dose_with_water_food",
+      "dose_form_instructions",
+      "treatment_reminder_setup"
+    ],
+    "interaction_safety": [
+      "drug_drug_interaction",
+      "drug_food_interaction",
+      "drug_alcohol_interaction",
+      "drug_supplement_interaction",
+      "contraindication_check",
+      "pregnancy_lactation_safe",
+      "adjust_dose",
+      "can_stop_early"
+    ],
+    "disease_symptom": [
+      "disease_info_general",
+      "disease_symptoms_check",
+      "disease_risk_factors",
+      "disease_prevention",
+      "treatment_options",
+      "side_effect_check",
+      "mild_side_effect_info",
+      "side_effect_duration",
+      "side_effect_management",
+      "unexpected_symptom_check",
+      "report_side_effect"
+    ],
+    "special_population": [
+      "pediatric_use",
+      "elderly_use",
+      "pregnancy_use",
+      "chronic_disease_use"
+    ],
+    "emergency": [
+      "overdose_guidance",
+      "emergency_symptom",
+      "poisoning_guidance",
+      "serious_side_effect_alert",
+      "allergic_reaction_guidance",
+      "contact_doctor"
+    ],
+    "meta": [
+      "greeting",
+      "small_talk",
+      "unknown"
+    ]
+  },
+  "intent_plans": {
+    "check_med_schedule": {
+      "group": "adherence",
+      "allowed_tools": ["get_today_medications", "med_list_cabinet", "log_dose"],
+      "data_sources": ["db"],
+      "goal": "Show today's doses and adherence context"
+    },
+    "missed_dose_guidance": {
+      "group": "adherence",
+      "allowed_tools": ["get_today_medications", "med_list_cabinet", "log_dose", "save_reminder_intent"],
+      "data_sources": ["db"],
+      "goal": "Guide missed dose safely and offer logging/reminders"
+    },
+    "drug_info_general": {
+      "group": "drug_info",
+      "allowed_tools": ["search_drug_kb", "med_list_cabinet", "upsert_medication"],
+      "data_sources": ["rag", "db"],
+      "goal": "Provide reliable drug info and optional add-to-cabinet"
+    },
+    "drug_drug_interaction": {
+      "group": "interaction_safety",
+      "allowed_tools": ["check_drug_interaction", "search_drug_kb"],
+      "data_sources": ["rag", "db"],
+      "goal": "Check interactions and warn with severity"
+    },
+    "dose_before_after_meal": {
+      "group": "dose_timing",
+      "allowed_tools": ["search_drug_kb", "get_today_medications"],
+      "data_sources": ["rag", "db"],
+      "goal": "Advise meal timing and practical medication usage"
+    },
+    "treatment_reminder_setup": {
+      "group": "dose_timing",
+      "allowed_tools": ["save_reminder_intent", "get_today_medications", "habit_list_by_profile", "habit_set_reminder"],
+      "data_sources": ["db"],
+      "goal": "Set or suggest reminder windows"
+    },
+    "treatment_tracking": {
+      "group": "adherence",
+      "allowed_tools": ["get_today_medications", "med_list_cabinet", "log_dose", "habit_log_status"],
+      "data_sources": ["db"],
+      "goal": "Track medication adherence and supportive habits"
+    },
+    "report_side_effect": {
+      "group": "disease_symptom",
+      "allowed_tools": ["append_care_note", "profile_get_overview", "search_drug_kb"],
+      "data_sources": ["db", "rag"],
+      "goal": "Record side effects and provide next safe actions"
+    },
+    "greeting": {
+      "group": "meta",
+      "allowed_tools": ["profile_get_overview", "get_today_medications", "med_list_cabinet", "habit_list_by_profile"],
+      "data_sources": ["db"],
+      "goal": "Friendly greeting with contextual snapshot"
+    },
+    "small_talk": {
+      "group": "meta",
+      "allowed_tools": ["profile_get_overview", "care_list_links", "habit_list_by_profile"],
+      "data_sources": [],
+      "goal": "Keep conversation natural and short"
+    },
+    "unknown": {
+      "group": "meta",
+      "allowed_tools": ["profile_get_overview", "get_today_medications", "med_list_cabinet", "search_drug_kb"],
+      "data_sources": ["db", "rag"],
+      "goal": "Ask clarification and provide safe fallback"
+    }
+  },
+  "defaults": {
+    "allowed_tools": ["profile_get_overview", "get_today_medications", "med_list_cabinet", "search_drug_kb"],
+    "data_sources": ["db", "rag"],
+    "group": "meta"
+  }
+}

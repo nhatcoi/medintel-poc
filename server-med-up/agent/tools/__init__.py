@@ -1,7 +1,15 @@
 """Tool registry: all LangChain tools available to the agent."""
 
-from agent.tools.medication_tools import log_dose, upsert_medication, get_today_medications
-from agent.tools.care_tools import append_care_note
+from agent.tools.medication_tools import get_today_medications, log_dose, med_list_cabinet, upsert_medication
+from agent.tools.care_tools import (
+    append_care_note,
+    care_list_links,
+    habit_create,
+    habit_list_by_profile,
+    habit_log_status,
+    habit_set_reminder,
+    profile_get_overview,
+)
 from agent.tools.reminder_tools import save_reminder_intent
 from agent.tools.memory_tools import update_patient_memory
 from agent.tools.drug_kb_tools import search_drug_kb
@@ -12,7 +20,14 @@ ALL_TOOLS = [
     log_dose,
     upsert_medication,
     get_today_medications,
+    med_list_cabinet,
     append_care_note,
+    profile_get_overview,
+    care_list_links,
+    habit_list_by_profile,
+    habit_create,
+    habit_set_reminder,
+    habit_log_status,
     save_reminder_intent,
     update_patient_memory,
     search_drug_kb,

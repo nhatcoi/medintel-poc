@@ -8,6 +8,10 @@ from sqlalchemy.orm import Session
 from models.profile import Profile
 
 
+def list_all(db: Session) -> list[Profile]:
+    return list(db.scalars(select(Profile).order_by(Profile.created_at.desc())).all())
+
+
 def get_by_id(db: Session, profile_id: uuid.UUID) -> Profile | None:
     return db.get(Profile, profile_id)
 
@@ -33,3 +37,8 @@ def update(db: Session, profile: Profile, **kwargs) -> Profile:
     db.commit()
     db.refresh(profile)
     return profile
+
+
+def delete(db: Session, profile: Profile) -> None:
+    db.delete(profile)
+    db.commit()

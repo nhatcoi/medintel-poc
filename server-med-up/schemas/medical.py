@@ -24,5 +24,13 @@ class MedicalRecordRead(BaseModel):
     notes: str | None = None
 
 
+class MedicalRecordUpdate(BaseModel):
+    disease_name: str | None = None
+    treatment_start_date: date | None = None
+    treatment_status: str | None = None
+    treatment_type: str | None = None
+    notes: str | None = None
+
+
 class MedicalRecordListResponse(BaseModel):
     records: list[MedicalRecordRead] = Field(default_factory=list)

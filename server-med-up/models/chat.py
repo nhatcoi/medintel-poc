@@ -22,6 +22,8 @@ class ChatSession(Base, TimestampMixin):
         GUID, ForeignKey("profiles.profile_id", ondelete="CASCADE"), nullable=False, index=True
     )
     title: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Pending agent write (tool + args) persisted across HTTP requests (checkpoint alone is not enough).
+    pending_agent_json: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
 
     profile: Mapped[Profile] = relationship("Profile", back_populates="chat_sessions")
     messages: Mapped[list[ChatMessage]] = relationship(

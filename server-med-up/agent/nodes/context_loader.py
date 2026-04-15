@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from agent.state import PatientState
 from core.database import SessionLocal
-from repositories import medication_repo, memory_repo, medical_repo
+from repositories import medication_repo, medical_repo
 
 
 async def context_loader(state: PatientState) -> dict:
@@ -49,12 +49,10 @@ async def context_loader(state: PatientState) -> dict:
             ],
         }
 
-        memory = memory_repo.get_all(db, pid)
-
         return {
             "patient_info": patient_info,
             "medications": med_dicts,
-            "memory": memory,
+            "memory": {},
         }
     finally:
         db.close()

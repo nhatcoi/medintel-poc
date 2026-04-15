@@ -17,6 +17,7 @@ _SMALL_TALK_RE = re.compile(
 )
 
 _KEYWORD_RULES: list[tuple[re.Pattern, Intent]] = [
+    (re.compile(r"xem\s*(t[uủ]|tu)\s*thuốc|mở\s*tủ\s*thuốc|vao\s*tu\s*thuoc", re.I), Intent.SMALL_TALK),
     (re.compile(r"quên\s*(uống|liều)", re.I), Intent.MISSED_DOSE_GUIDANCE),
     (re.compile(r"bỏ\s*(liều|thuốc)", re.I), Intent.SKIP_DOSE_GUIDANCE),
     (re.compile(r"tác\s*dụng\s*phụ", re.I), Intent.SIDE_EFFECT_CHECK),

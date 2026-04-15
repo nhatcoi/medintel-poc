@@ -17,6 +17,9 @@ Given a patient message, return ONLY the intent name from this list:
 Rules:
 - Return exactly one intent name, nothing else.
 - If unsure, return "unknown".
+- If user asks medicine recommendation/info for a symptom (e.g. "goi y thuoc dau dau"),
+  prefer "drug_info_general" (not dose_before_after_meal).
+- "dose_before_after_meal" only when question explicitly asks before/after meal timing.
 - Output ONLY the intent string, no explanation."""
 
 
@@ -28,12 +31,17 @@ async def classify_by_llm(text: str) -> tuple[Intent, float]:
         temperature=0,
         max_tokens=32,
     )
-    resp = await llm.ainvoke([
-        SystemMessage(content=_SYSTEM),
-        HumanMessage(content=text),
-    ])
-    raw = (resp.content or "").strip().lower().replace('"', "").replace("'", "")
     try:
-        return Intent(raw), 0.70
-    except ValueError:
-        return Intent.UNKNOWN, 0.30
+        resp = await llm.ainvoke([
+            SystemMessage(content=_SYSTEM),
+            HumanMessage(content=text),
+        ])
+        raw = (resp.content or "").strip().lower().replace('"', "").replace("'", "")
+        try:
+            return Intent(raw), 0.70
+        except ValueError:
+            return Intent.UNKNOWN, 0.30
+    except Exception:
+        # Fallback safety: classifier provider can be blocked by policy/network.
+        # Never break chat pipeline for classifier failure.
+        return Intent.UNKNOWN, 0.20

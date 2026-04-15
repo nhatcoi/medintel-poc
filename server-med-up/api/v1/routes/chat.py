@@ -27,6 +27,26 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 _log = logging.getLogger("medintel.chat")
 
 
+def _user_confirms_text(text: str) -> bool:
+    """Heuristic: user explicitly confirms a pending write (independent of LangGraph message order)."""
+    t = text.strip().lower()
+    if any(w in t for w in ("hủy", "huy", "không", "khong", "dừng", "dung", "thôi", "thoi")):
+        return False
+    return any(
+        w in t
+        for w in (
+            "xác nhận",
+            "xac nhan",
+            "đồng ý",
+            "dong y",
+            "ok",
+            "oke",
+            "duoc",
+            "được",
+        )
+    )
+
+
 def _clip(value: object, max_chars: int = 3000) -> str:
     text = str(value)
     if len(text) <= max_chars:
@@ -34,25 +54,7 @@ def _clip(value: object, max_chars: int = 3000) -> str:
     return f"{text[:max_chars]} ...[truncated {len(text) - max_chars} chars]"
 
 
-async def _invoke_graph(
-    *,
-    text: str,
-    profile_id: str | None,
-    session_id: str | None,
-    include_medication_context: bool,
-) -> ChatResponse:
-    from agent.graph import graph
-
-    initial_state = {
-        "messages": [HumanMessage(content=text)],
-        "profile_id": profile_id,
-        "session_id": session_id,
-        "include_medication_context": include_medication_context,
-    }
-
-    config = {"configurable": {"thread_id": session_id or str(uuid.uuid4())}}
-    result = await graph.ainvoke(initial_state, config=config)
-
+def _graph_result_to_response(result: dict, session_id: str | None) -> ChatResponse:
     return ChatResponse(
         reply=result.get("reply", ""),
         source_type=result.get("source_type", "model"),
@@ -62,6 +64,31 @@ async def _invoke_graph(
         suggested_actions=[SuggestedAction(**a) for a in result.get("suggested_actions", [])],
         session_id=session_id,
     )
+
+
+async def _invoke_graph(
+    *,
+    text: str,
+    profile_id: str | None,
+    session_id: str | None,
+    include_medication_context: bool,
+    pending_write_action: dict | None = None,
+    user_confirms_pending: bool = False,
+) -> dict:
+    from agent.graph import graph
+
+    initial_state: dict = {
+        "messages": [HumanMessage(content=text)],
+        "profile_id": profile_id,
+        "session_id": session_id,
+        "include_medication_context": include_medication_context,
+        "user_confirms_pending": user_confirms_pending,
+    }
+    if pending_write_action is not None:
+        initial_state["pending_write_action"] = pending_write_action
+
+    config = {"configurable": {"thread_id": session_id or str(uuid.uuid4())}}
+    return await graph.ainvoke(initial_state, config=config)
 
 
 @router.post("/message", response_model=ChatResponse)
@@ -125,12 +152,23 @@ async def send_message(body: ChatRequest, db: DbSession, response: Response):
                 db.commit()
             return ChatResponse(reply=cached["reply"], session_id=effective_session_id)
 
-    result = await _invoke_graph(
+    pending_from_db: dict | None = None
+    if profile_uuid is not None and effective_session_id is not None:
+        pending_from_db = chat_repo.get_pending_agent(db, uuid.UUID(effective_session_id))
+
+    raw = await _invoke_graph(
         text=text,
         profile_id=body.profile_id,
         session_id=effective_session_id,
         include_medication_context=body.include_medication_context,
+        pending_write_action=pending_from_db,
+        user_confirms_pending=_user_confirms_text(text),
     )
+    result = _graph_result_to_response(raw, effective_session_id)
+
+    if profile_uuid is not None and effective_session_id is not None:
+        sid = uuid.UUID(effective_session_id)
+        chat_repo.set_pending_agent(db, sid, raw.get("pending_write_action"))
 
     if is_cacheable_request(text, body.profile_id, body.session_id, body.include_medication_context):
         raw_tools = [{"tool": t.tool, "args": t.args} for t in result.tool_calls]
@@ -184,7 +222,7 @@ async def send_message_dry_run(body: ChatRequest, response: Response):
     text = body.text.strip()
     if not text:
         raise HTTPException(status_code=400, detail="Text must not be empty")
-    result = await _invoke_graph(
+    raw = await _invoke_graph(
         text=text,
         profile_id=body.profile_id,
         session_id=body.session_id,
@@ -192,7 +230,7 @@ async def send_message_dry_run(body: ChatRequest, response: Response):
     )
     ms = (time.perf_counter() - t0) * 1000
     response.headers["X-Process-Time-Ms"] = f"{ms:.1f}"
-    return result
+    return _graph_result_to_response(raw, body.session_id)
 
 
 @router.get("/suggested-questions", response_model=SuggestedQuestionsResponse)

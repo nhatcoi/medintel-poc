@@ -43,6 +43,25 @@ def add_message(
     return msg
 
 
+def get_pending_agent(db: Session, session_id: uuid.UUID) -> dict[str, Any] | None:
+    row = db.get(ChatSession, session_id)
+    if row is None or not row.pending_agent_json:
+        return None
+    data = row.pending_agent_json
+    return data if isinstance(data, dict) and data.get("tool") else None
+
+
+def set_pending_agent(db: Session, session_id: uuid.UUID, pending: dict[str, Any] | None) -> None:
+    row = db.get(ChatSession, session_id)
+    if row is None:
+        return
+    if pending is None or not pending.get("tool"):
+        row.pending_agent_json = None
+    else:
+        row.pending_agent_json = pending
+    db.flush()
+
+
 def load_recent_turns(db: Session, session_id: uuid.UUID, limit: int = 10) -> list[dict[str, str]]:
     stmt = (
         select(ChatMessage)

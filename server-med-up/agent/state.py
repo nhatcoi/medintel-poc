@@ -33,6 +33,9 @@ class PatientState(TypedDict, total=False):
     # -- Reasoning --
     tool_calls: list[dict[str, Any]]
     tool_results: list[dict[str, Any]]
+    pending_write_action: dict[str, Any]
+    last_confirmation_status: str
+    user_confirms_pending: bool
     confidence: float
 
     # -- Safety --

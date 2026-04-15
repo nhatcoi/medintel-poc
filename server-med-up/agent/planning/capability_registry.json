@@ -1,0 +1,154 @@
+{
+  "version": "1.0",
+  "tools": [
+    {
+      "name": "get_today_medications",
+      "category": "schedule",
+      "side_effect": "read",
+      "description": "Read today's medication schedule from DB",
+      "required_args": ["profile_id"]
+    },
+    {
+      "name": "med_list_cabinet",
+      "category": "medication_crud",
+      "side_effect": "read",
+      "description": "List medications in personal cabinet",
+      "required_args": ["profile_id"]
+    },
+    {
+      "name": "upsert_medication",
+      "category": "medication_crud",
+      "side_effect": "write",
+      "description": "Create medication record in cabinet",
+      "required_args": ["name", "profile_id"]
+    },
+    {
+      "name": "log_dose",
+      "category": "adherence",
+      "side_effect": "write",
+      "description": "Record dose status for adherence flow",
+      "required_args": ["profile_id", "medication_name"]
+    },
+    {
+      "name": "search_drug_kb",
+      "category": "drug_info",
+      "side_effect": "read",
+      "description": "Search drug knowledge base (RAG)",
+      "required_args": ["query"]
+    },
+    {
+      "name": "check_drug_interaction",
+      "category": "interaction",
+      "side_effect": "read",
+      "description": "Check interaction between two drugs",
+      "required_args": ["drug_a", "drug_b"]
+    },
+    {
+      "name": "append_care_note",
+      "category": "care",
+      "side_effect": "write",
+      "description": "Append note for care follow-up",
+      "required_args": ["profile_id", "text"]
+    },
+    {
+      "name": "profile_get_overview",
+      "category": "profile",
+      "side_effect": "read",
+      "description": "Get profile overview and latest medical context",
+      "required_args": ["profile_id"]
+    },
+    {
+      "name": "care_list_links",
+      "category": "care",
+      "side_effect": "read",
+      "description": "List caregiver links for profile",
+      "required_args": ["profile_id"]
+    },
+    {
+      "name": "habit_list_by_profile",
+      "category": "habit",
+      "side_effect": "read",
+      "description": "List habits by profile",
+      "required_args": ["profile_id"]
+    },
+    {
+      "name": "habit_create",
+      "category": "habit",
+      "side_effect": "write",
+      "description": "Create health habit for profile",
+      "required_args": ["profile_id", "habit_name"]
+    },
+    {
+      "name": "habit_set_reminder",
+      "category": "habit",
+      "side_effect": "write",
+      "description": "Set reminder for a habit",
+      "required_args": ["habit_id", "reminder_time"]
+    },
+    {
+      "name": "habit_log_status",
+      "category": "habit",
+      "side_effect": "write",
+      "description": "Record habit completion status",
+      "required_args": ["habit_id", "profile_id"]
+    },
+    {
+      "name": "save_reminder_intent",
+      "category": "reminder",
+      "side_effect": "write",
+      "description": "Persist reminder setup intent",
+      "required_args": ["profile_id", "title"]
+    },
+    {
+      "name": "update_patient_memory",
+      "category": "memory",
+      "side_effect": "write",
+      "description": "Update patient long-term memory",
+      "required_args": ["profile_id", "key", "value"]
+    },
+    {
+      "name": "tavily_search",
+      "category": "external_search",
+      "side_effect": "read",
+      "description": "External web search fallback",
+      "required_args": ["query"]
+    }
+  ],
+  "apis": [
+    {
+      "name": "list_medications",
+      "method": "GET",
+      "path": "/api/v1/treatment/medications"
+    },
+    {
+      "name": "create_medication",
+      "method": "POST",
+      "path": "/api/v1/treatment/medications"
+    },
+    {
+      "name": "update_medication",
+      "method": "PATCH",
+      "path": "/api/v1/treatment/medications/{medication_id}"
+    },
+    {
+      "name": "delete_medication",
+      "method": "DELETE",
+      "path": "/api/v1/treatment/medications/{medication_id}"
+    },
+    {
+      "name": "list_schedules_by_profile",
+      "method": "GET",
+      "path": "/api/v1/treatment/schedules"
+    },
+    {
+      "name": "create_schedule",
+      "method": "POST",
+      "path": "/api/v1/treatment/medications/{medication_id}/schedules"
+    },
+    {
+      "name": "list_logs_by_profile",
+      "method": "GET",
+      "path": "/api/v1/treatment/logs"
+    }
+  ]
+}

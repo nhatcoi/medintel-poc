@@ -28,15 +28,10 @@ logging.getLogger("medintel.agent").setLevel(logging.INFO)
 
 
 def _seed_defaults(session: Session) -> None:
-    """Seed default DiseaseCategory + demo profile."""
+    """Seed demo profile."""
     import uuid
     from sqlalchemy import select
-    from models.medical import DiseaseCategory
     from models.profile import Profile
-
-    if not session.scalars(select(DiseaseCategory).limit(1)).first():
-        session.add(DiseaseCategory(category_name="Chua phan loai", description="Mac dinh he thong"))
-        session.commit()
 
     raw = settings.default_prescription_user_id.strip()
     if raw:

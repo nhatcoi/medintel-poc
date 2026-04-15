@@ -1,17 +1,17 @@
 """Reference data seeding (standalone script)."""
 
 from core.database import SessionLocal
-from models.medical import DiseaseCategory
+from models.profile import Profile
 
 
 def seed():
     db = SessionLocal()
     try:
         from sqlalchemy import select
-        if not db.scalars(select(DiseaseCategory).limit(1)).first():
-            db.add(DiseaseCategory(category_name="Chua phan loai"))
+        if not db.scalars(select(Profile).limit(1)).first():
+            db.add(Profile(full_name="Demo User", role="patient"))
             db.commit()
-            print("Seeded default disease category")
+            print("Seeded demo profile")
         else:
             print("Data already exists")
     finally:

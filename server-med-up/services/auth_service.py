@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from core.security import create_access_token
 from models.auth import AuthCredential, AuthSession
-from models.profile import Device, Profile
+from models.profile import Profile
 from models.base import utc_now
 from core.security import hash_password, verify_password
 
@@ -19,10 +19,6 @@ from core.security import hash_password, verify_password
 def register_device(db: Session, *, full_name: str, role: str = "patient", platform: str | None = None) -> tuple[Profile, str]:
     profile = Profile(full_name=full_name, role=role)
     db.add(profile)
-    db.flush()
-
-    device = Device(profile_id=profile.id, platform=platform)
-    db.add(device)
     db.commit()
     db.refresh(profile)
 
