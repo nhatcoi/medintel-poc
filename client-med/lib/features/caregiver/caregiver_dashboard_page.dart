@@ -11,7 +11,12 @@ import '../../providers/providers.dart';
 import '../treatment/data/treatment_models.dart';
 import '../treatment/data/treatment_provider.dart';
 import 'data/caregiver_profiles_state.dart';
+import 'data/drug_interaction_models.dart';
+import 'data/drug_interaction_provider.dart';
 import 'widgets/caregiver_top_bar.dart';
+import 'widgets/com_b_insight_card.dart';
+import 'widgets/drug_interaction_section.dart';
+import 'widgets/interactive_warnings_section.dart';
 import 'widgets/medications_section.dart';
 import 'widgets/monitoring_cards_block.dart';
 import 'widgets/patient_monitoring_header.dart';
@@ -65,6 +70,27 @@ class _CaregiverDashboardPageState extends ConsumerState<CaregiverDashboardPage>
     final patientName = selectedProfile?.displayName ?? primaryName;
     final model = DashboardFromLocal.buildCaregiver(selectedLocal, patientName, l10n);
 
+    final comB = computeComBScore(
+      meds: treatment.items,
+      schedules: treatment.schedules,
+      logs: treatment.logs,
+      missedDoses: treatment.missedDoses,
+      summary7: treatment.summary,
+    );
+    final warnings = deriveWarnings(
+      meds: treatment.items,
+      schedules: treatment.schedules,
+      missedDoses: treatment.missedDoses,
+      nextDose: treatment.nextDose,
+      summary7: treatment.summary,
+    );
+    final interactionState = ref.watch(drugInteractionProvider);
+    final activeDrugNames = treatment.items
+        .where((m) => (m.status ?? 'active').toLowerCase() == 'active')
+        .map((m) => m.name.trim())
+        .where((n) => n.isNotEmpty)
+        .toList();
+
     return Scaffold(
       backgroundColor: VitalisColors.background,
       body: Column(
@@ -99,6 +125,23 @@ class _CaregiverDashboardPageState extends ConsumerState<CaregiverDashboardPage>
                   vitalsHeadline: model.vitalsHeadline,
                   vitalsSub: model.vitalsSub,
                 ),
+                const SizedBox(height: 20),
+                DrugInteractionSection(
+                  loading: interactionState.loading,
+                  pairs: interactionState.pairs,
+                  error: interactionState.error,
+                  onRefresh: () => ref
+                      .read(drugInteractionProvider.notifier)
+                      .refresh(activeDrugNames),
+                  onAskAi: (pair) => _askAiAboutInteraction(context, pair),
+                ),
+                const SizedBox(height: 20),
+                InteractiveWarningsSection(
+                  warnings: warnings,
+                  onAction: (w) => _handleWarningAction(context, w),
+                ),
+                const SizedBox(height: 20),
+                ComBInsightCard(score: comB),
                 const SizedBox(height: 28),
                 MedicationsSection(
                   dateChipLabel: model.medicationsDateLabel,
@@ -117,6 +160,64 @@ class _CaregiverDashboardPageState extends ConsumerState<CaregiverDashboardPage>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _handleWarningAction(
+    BuildContext context,
+    CareWarning warning,
+  ) async {
+    final profileId = ref.read(activeProfileIdProvider);
+    switch (warning.action) {
+      case WarningAction.logTaken:
+        if (profileId == null ||
+            profileId.isEmpty ||
+            warning.medicationId == null) {
+          return;
+        }
+        await ref.read(treatmentProvider.notifier).logDose(
+              profileId: profileId,
+              medicationId: warning.medicationId!,
+              status: 'taken',
+              scheduledTime: warning.scheduledTime,
+              scheduledDate: warning.scheduledDatetime?.toLocal(),
+            );
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            behavior: SnackBarBehavior.floating,
+            content: Text('Đã ghi nhận liều thuốc.'),
+          ),
+        );
+        break;
+      case WarningAction.openChat:
+        if (!context.mounted) return;
+        context.goNamed('ai');
+        break;
+      case WarningAction.openCabinet:
+        if (!context.mounted) return;
+        context.goNamed('cabinet');
+        break;
+      case WarningAction.openSchedule:
+        if (!context.mounted) return;
+        context.goNamed('cabinet');
+        break;
+    }
+  }
+
+  void _askAiAboutInteraction(
+    BuildContext context,
+    DrugInteractionPair pair,
+  ) {
+    // Route to AI chat; deep-link payload left for chat page to pick up later.
+    context.goNamed('ai');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        content: Text(
+          'Hỏi AI về tương tác ${pair.drugA} × ${pair.drugB}…',
+        ),
       ),
     );
   }
@@ -197,7 +298,7 @@ class _CaregiverDashboardPageState extends ConsumerState<CaregiverDashboardPage>
         .map(
           (l) => LocalDoseLog(
             id: l.logId,
-            medicationName: l.medicationName ?? '',
+            medicationName: l.medicationName,
             status: l.status,
             recordedAtIso: (l.actualDatetime ?? l.scheduledDatetime).toIso8601String(),
             note: l.notes,

@@ -86,6 +86,8 @@ def _enforce_tool_truth(reply: str, state: PatientState) -> str:
 async def response_composer(state: PatientState) -> dict:
     reply = state.get("reply", "")
     risk = state.get("risk_level", "low")
+    if state.get("last_confirmation_status") == "cancelled":
+        reply = "Mình đã hủy thao tác ghi nhận uống thuốc theo yêu cầu của bạn."
     pending = state.get("pending_write_action") or {}
     if pending and pending.get("tool"):
         action = pending.get("tool", "hành động")
@@ -111,14 +113,19 @@ async def response_composer(state: PatientState) -> dict:
         for r in rag_results[:3]
     ]
 
+    if "tool_calls" in state:
+        tool_calls = state.get("tool_calls") or []
+    else:
+        tool_calls = [
+            {"tool": tr.get("tool", ""), "args": {}}
+            for tr in (state.get("tool_results") or [])
+            if tr.get("tool")
+        ]
+
     return {
         "reply": reply,
         "source_type": source_type,
         "citations": citations,
-        "tool_calls": state.get("tool_calls") or [
-            {"tool": tr.get("tool", ""), "args": {}}
-            for tr in (state.get("tool_results") or [])
-            if tr.get("tool")
-        ],
+        "tool_calls": tool_calls,
         "suggested_actions": state.get("suggested_actions") or [],
     }

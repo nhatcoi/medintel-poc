@@ -36,6 +36,7 @@ class PatientState(TypedDict, total=False):
     pending_write_action: dict[str, Any]
     last_confirmation_status: str
     user_confirms_pending: bool
+    user_rejects_pending: bool
     confidence: float
 
     # -- Safety --

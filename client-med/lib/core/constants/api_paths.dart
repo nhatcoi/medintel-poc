@@ -15,6 +15,7 @@ final class ApiPaths {
   static const String chatSuggestedQuestions = '/api/v1/chat/suggested-questions';
   static const String chatWelcomeHints = '/api/v1/chat/welcome-hints';
   static const String ragSearch = '/api/v1/rag/search';
+  static const String ragDrugInteractions = '/api/v1/rag/drug-interactions';
   static const String medicalRecords = '/api/v1/medical-records/';
   static const String memory = '/api/v1/memory/';
 

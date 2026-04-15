@@ -47,6 +47,11 @@ def _user_confirms_text(text: str) -> bool:
     )
 
 
+def _user_rejects_text(text: str) -> bool:
+    t = text.strip().lower()
+    return any(w in t for w in ("hủy", "huy", "không", "khong", "dừng", "dung", "thôi", "thoi"))
+
+
 def _clip(value: object, max_chars: int = 3000) -> str:
     text = str(value)
     if len(text) <= max_chars:
@@ -74,6 +79,7 @@ async def _invoke_graph(
     include_medication_context: bool,
     pending_write_action: dict | None = None,
     user_confirms_pending: bool = False,
+    user_rejects_pending: bool = False,
 ) -> dict:
     from agent.graph import graph
 
@@ -83,6 +89,7 @@ async def _invoke_graph(
         "session_id": session_id,
         "include_medication_context": include_medication_context,
         "user_confirms_pending": user_confirms_pending,
+        "user_rejects_pending": user_rejects_pending,
     }
     if pending_write_action is not None:
         initial_state["pending_write_action"] = pending_write_action
@@ -163,6 +170,7 @@ async def send_message(body: ChatRequest, db: DbSession, response: Response):
         include_medication_context=body.include_medication_context,
         pending_write_action=pending_from_db,
         user_confirms_pending=_user_confirms_text(text),
+        user_rejects_pending=_user_rejects_text(text),
     )
     result = _graph_result_to_response(raw, effective_session_id)
 
@@ -227,6 +235,7 @@ async def send_message_dry_run(body: ChatRequest, response: Response):
         profile_id=body.profile_id,
         session_id=body.session_id,
         include_medication_context=body.include_medication_context,
+        user_rejects_pending=_user_rejects_text(text),
     )
     ms = (time.perf_counter() - t0) * 1000
     response.headers["X-Process-Time-Ms"] = f"{ms:.1f}"

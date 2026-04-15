@@ -11,9 +11,24 @@ from langchain_core.messages import ToolMessage
 from agent.planning.registry import capability_registry
 from agent.state import PatientState
 from agent.tools import TOOL_MAP
+from agent.tools.common import parse_uuid
 from core.config import settings
 
 _log = logging.getLogger("medintel.agent")
+_PROFILE_SCOPED_TOOLS = {
+    "get_today_medications",
+    "upsert_medication",
+    "log_dose",
+    "med_list_cabinet",
+    "profile_get_overview",
+    "care_list_links",
+    "habit_list_by_profile",
+    "habit_create",
+    "habit_log_status",
+    "update_patient_memory",
+    "save_reminder_intent",
+    "append_care_note",
+}
 
 
 def _write_tools() -> set[str]:
@@ -40,6 +55,14 @@ def _is_confirmed(state: PatientState) -> bool:
     return any(w in txt for w in yes_words)
 
 
+def _is_rejected(state: PatientState) -> bool:
+    txt = _last_user_text(state)
+    if not txt:
+        return False
+    no_words = ("khong", "không", "huy", "hủy", "dung", "dừng", "thoi", "thôi")
+    return any(w in txt for w in no_words)
+
+
 def _parse_tool_payload(raw_output: str) -> dict:
     try:
         data = json.loads(raw_output)
@@ -52,12 +75,49 @@ def _parse_tool_payload(raw_output: str) -> dict:
 
 async def tool_executor(state: PatientState) -> dict:
     tool_calls = state.get("tool_calls", [])
-    if not tool_calls:
-        return {"tool_results": []}
-
-    write_tools = _write_tools()
     pending = state.get("pending_write_action") or {}
     confirmed = bool(state.get("user_confirms_pending")) or _is_confirmed(state)
+    rejected = bool(state.get("user_rejects_pending")) or _is_rejected(state)
+    if pending and rejected:
+        payload = {
+            "status": "cancelled",
+            "code": "WRITE_ACTION_CANCELLED",
+            "summary": f"Đã hủy hành động '{pending.get('tool')}'.",
+            "action": pending.get("tool"),
+        }
+        return {
+            "tool_results": [{"tool": pending.get("tool", ""), "result": json.dumps(payload, ensure_ascii=False)}],
+            "messages": [],
+            "pending_write_action": None,
+            "last_confirmation_status": "cancelled",
+        }
+
+    if pending and confirmed and pending.get("tool"):
+        pending_tool = str(pending.get("tool"))
+        has_pending_tool_call = any(str(tc.get("tool", "")) == pending_tool for tc in tool_calls)
+        if not has_pending_tool_call:
+            tool_calls = [
+                {
+                    "tool": pending_tool,
+                    "args": dict(pending.get("args") or {}),
+                    "id": pending_tool,
+                },
+                *tool_calls,
+            ]
+
+    if not tool_calls:
+        if pending and confirmed and pending.get("tool"):
+            tool_calls = [
+                {
+                    "tool": pending.get("tool"),
+                    "args": dict(pending.get("args") or {}),
+                    "id": str(pending.get("tool")),
+                }
+            ]
+        else:
+            return {"tool_results": []}
+
+    write_tools = _write_tools()
     results = []
     messages = []
     next_pending = pending if pending else None
@@ -69,11 +129,12 @@ async def tool_executor(state: PatientState) -> dict:
             args = {}
         # Normalize/inject profile_id for profile-scoped tools.
         profile_id = (state.get("profile_id") or "").strip()
-        if tool_name in {"get_today_medications", "upsert_medication"}:
-            if args.get("profile_id") in {"current_user", "me", "self", "", None} and profile_id:
+        if tool_name in _PROFILE_SCOPED_TOOLS and profile_id:
+            incoming_profile_id = str(args.get("profile_id", "")).strip()
+            # Models can emit placeholders like "ID_cua_ban" instead of UUID.
+            if not incoming_profile_id or incoming_profile_id.lower() in {"current_user", "me", "self"}:
                 args["profile_id"] = profile_id
-        if tool_name in {"log_dose", "med_list_cabinet", "profile_get_overview", "care_list_links", "habit_list_by_profile"}:
-            if args.get("profile_id") in {"current_user", "me", "self", "", None} and profile_id:
+            elif parse_uuid(incoming_profile_id) is None:
                 args["profile_id"] = profile_id
         tool_id = tc.get("id", tool_name)
 

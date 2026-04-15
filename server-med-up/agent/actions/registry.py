@@ -322,7 +322,7 @@ _EMERGENCY = {
 _META = {
     Intent.GREETING.value: [
         A("Hôm nay tôi uống thuốc gì?", "schedule",
-          prompt="Hôm nay tôi cần uống những thuốc nào?", priority=80),
+          prompt="Liều thuốc hôm nay", priority=80),
         A("Xem tuân thủ tuần qua", "adherence",
           prompt="Tình hình tuân thủ 7 ngày gần đây?", priority=70),
         view_cabinet(),

@@ -97,35 +97,51 @@ class _CabinetPageState extends ConsumerState<CabinetPage> {
   }
 
   Future<void> _setupSchedule(MedicationItem item) async {
-    final timeCtrl = TextEditingController();
+    final profileId = ref.read(activeProfileIdProvider);
+    if (profileId == null || profileId.isEmpty) return;
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: const TimeOfDay(hour: 8, minute: 0),
+      helpText: 'Thêm giờ uống - ${item.name}',
+    );
+    if (picked == null) return;
+    final hh = picked.hour.toString().padLeft(2, '0');
+    final mm = picked.minute.toString().padLeft(2, '0');
+    await ref.read(treatmentProvider.notifier).addSchedule(
+          profileId: profileId,
+          medicationId: item.medicationId,
+          scheduledTime: '$hh:$mm:00',
+        );
+  }
+
+  Future<void> _removeSchedule(MedicationItem item, MedicationScheduleItem schedule) async {
+    final profileId = ref.read(activeProfileIdProvider);
+    if (profileId == null || profileId.isEmpty) return;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Thiết lập lịch - ${item.name}'),
-        content: TextField(
-          controller: timeCtrl,
-          keyboardType: TextInputType.datetime,
-          decoration: const InputDecoration(
-            labelText: 'Giờ uống (HH:mm)',
-            hintText: 'Ví dụ 08:00',
-          ),
-        ),
+        title: const Text('Xóa giờ uống?'),
+        content: Text('Xóa giờ ${_shortTime(schedule.scheduledTime)} của ${item.name}?'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Hủy')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Lưu')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Xóa'),
+          ),
         ],
       ),
     );
     if (ok != true) return;
-    final raw = timeCtrl.text.trim();
-    final isValid = RegExp(r'^([01]\d|2[0-3]):[0-5]\d$').hasMatch(raw);
-    if (!isValid) return;
-    await ref.read(treatmentRepositoryProvider).createSchedule(
+    await ref.read(treatmentProvider.notifier).removeSchedule(
+          profileId: profileId,
           medicationId: item.medicationId,
-          scheduledTime: '$raw:00',
+          scheduleId: schedule.scheduleId,
         );
-    await _reload();
   }
+
+  static String _shortTime(String raw) =>
+      raw.length >= 5 ? raw.substring(0, 5) : raw;
 
   @override
   Widget build(BuildContext context) {
@@ -138,6 +154,13 @@ class _CabinetPageState extends ConsumerState<CabinetPage> {
     final displayName = ref.watch(activeProfileDisplayNameProvider);
     final state = ref.watch(treatmentProvider);
     final items = state.items;
+    final schedulesByMed = <String, List<MedicationScheduleItem>>{};
+    for (final s in state.schedules) {
+      schedulesByMed.putIfAbsent(s.medicationId, () => []).add(s);
+    }
+    for (final list in schedulesByMed.values) {
+      list.sort((a, b) => a.scheduledTime.compareTo(b.scheduledTime));
+    }
 
     return Scaffold(
       body: RefreshIndicator(
@@ -191,8 +214,10 @@ class _CabinetPageState extends ConsumerState<CabinetPage> {
                     ...items.map(
                       (m) => _CabinetMedicationCard(
                         item: m,
+                        schedules: schedulesByMed[m.medicationId] ?? const [],
                         onUpdateInventory: () => _updateInventory(m),
                         onSetupSchedule: () => _setupSchedule(m),
+                        onRemoveSchedule: (s) => _removeSchedule(m, s),
                       ),
                     ),
                 ],
@@ -213,13 +238,19 @@ class _CabinetPageState extends ConsumerState<CabinetPage> {
 class _CabinetMedicationCard extends StatelessWidget {
   const _CabinetMedicationCard({
     required this.item,
+    required this.schedules,
     required this.onUpdateInventory,
     required this.onSetupSchedule,
+    required this.onRemoveSchedule,
   });
 
   final MedicationItem item;
+  final List<MedicationScheduleItem> schedules;
   final VoidCallback onUpdateInventory;
   final VoidCallback onSetupSchedule;
+  final void Function(MedicationScheduleItem schedule) onRemoveSchedule;
+
+  String _shortTime(String raw) => raw.length >= 5 ? raw.substring(0, 5) : raw;
 
   @override
   Widget build(BuildContext context) {
@@ -287,6 +318,33 @@ class _CabinetMedicationCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
+          if (schedules.isEmpty)
+            Text(
+              'Chưa có giờ uống. Bấm "Thêm giờ" để cài đặt.',
+              style: TextStyle(
+                fontSize: 12,
+                color: scheme.onSurfaceVariant,
+                fontStyle: FontStyle.italic,
+              ),
+            )
+          else
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final s in schedules)
+                  InputChip(
+                    avatar: Icon(LucideIcons.alarmClock, size: 14, color: scheme.primary),
+                    label: Text(_shortTime(s.scheduledTime)),
+                    labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                    onDeleted: () => onRemoveSchedule(s),
+                    deleteIconColor: scheme.error.withValues(alpha: 0.8),
+                    backgroundColor: scheme.primary.withValues(alpha: 0.08),
+                    side: BorderSide(color: scheme.primary.withValues(alpha: 0.2)),
+                  ),
+              ],
+            ),
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
@@ -301,7 +359,7 @@ class _CabinetMedicationCard extends StatelessWidget {
                 child: FilledButton.icon(
                   onPressed: onSetupSchedule,
                   icon: const Icon(LucideIcons.alarmClock, size: 18),
-                  label: const Text('Thiết lập lịch'),
+                  label: const Text('Thêm giờ'),
                 ),
               ),
             ],

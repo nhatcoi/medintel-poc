@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../services/api_service.dart';
 import '../../../core/constants/api_paths.dart';
@@ -14,8 +15,10 @@ class ChatSendResult {
 
   final String reply;
   final List<SuggestedChatAction> suggestedActions;
+
   /// Lệnh agent — client thực thi & lưu database.
   final List<Map<String, dynamic>> toolCalls;
+
   /// Phiên chat trên server (gửi lại ở lượt sau để nối tiếp).
   final String? sessionId;
 }
@@ -25,7 +28,9 @@ class ChatRepository {
 
   final ApiService _api;
 
-  Future<List<SuggestedChatAction>> fetchSuggestedQuestions(String profileId) async {
+  Future<List<SuggestedChatAction>> fetchSuggestedQuestions(
+    String profileId,
+  ) async {
     final id = profileId.trim();
     if (id.isEmpty) return const [];
 
@@ -141,13 +146,69 @@ class ChatRepository {
     }
 
     final sid = data?['session_id'];
-    final sessionOut = sid != null && '$sid'.trim().isNotEmpty ? '$sid'.trim() : null;
+    final sessionOut = sid != null && '$sid'.trim().isNotEmpty
+        ? '$sid'.trim()
+        : null;
 
     return ChatSendResult(
       reply: reply,
       suggestedActions: actions,
       toolCalls: tools,
       sessionId: sessionOut,
+    );
+  }
+
+  Future<ScanPrescriptionPreviewResult> scanPrescriptionImage(
+    XFile file, {
+    String? profileId,
+    required bool persist,
+  }) async {
+    final fileName = file.name.isNotEmpty ? file.name : 'prescription.jpg';
+    final form = FormData.fromMap({
+      'file': await MultipartFile.fromFile(file.path, filename: fileName),
+      'persist': persist ? 'true' : 'false',
+      if (profileId != null && profileId.trim().isNotEmpty)
+        'profile_id': profileId.trim(),
+    });
+
+    final resp = await _api.client.post<Map<String, dynamic>>(
+      ApiPaths.scanPrescription,
+      data: form,
+      options: Options(receiveTimeout: const Duration(seconds: 60)),
+    );
+
+    final data = resp.data ?? const <String, dynamic>{};
+    final medsRaw = data['medications'];
+    final meds = <ScannedMedicationPreview>[];
+    if (medsRaw is List) {
+      for (final item in medsRaw) {
+        if (item is! Map) continue;
+        final map = item.map((k, v) => MapEntry(k.toString(), v));
+        final name = map['medication_name']?.toString().trim() ?? '';
+        if (name.isEmpty) continue;
+        final timesRaw = map['times'];
+        final times = <String>[];
+        if (timesRaw is List) {
+          for (final t in timesRaw) {
+            final text = t?.toString().trim() ?? '';
+            if (text.isNotEmpty) times.add(text);
+          }
+        }
+        meds.add(
+          ScannedMedicationPreview(
+            name: name,
+            dosage: map['dosage']?.toString(),
+            frequency: map['frequency']?.toString(),
+            instructions: map['instructions']?.toString(),
+            times: times,
+          ),
+        );
+      }
+    }
+
+    return ScanPrescriptionPreviewResult(
+      diseaseName: data['disease_name']?.toString() ?? '',
+      medications: meds,
     );
   }
 }

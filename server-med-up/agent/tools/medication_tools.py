@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone, time as dtime
+from datetime import datetime, timedelta, timezone, time as dtime
 
 from langchain_core.tools import tool
-from sqlalchemy import select
+from sqlalchemy import and_, select
 
 from agent.tools.common import parse_uuid, tool_error, tool_ok
 from core.database import SessionLocal
@@ -27,6 +27,14 @@ def log_dose(profile_id: str, medication_name: str, status: str = "taken", note:
 
     db = SessionLocal()
     try:
+        now_utc = datetime.now(timezone.utc)
+        now_local = now_utc.astimezone()
+        day_start_local = now_local.replace(hour=0, minute=0, second=0, microsecond=0)
+        day_end_local = day_start_local + timedelta(days=1)
+        day_start_utc = day_start_local.astimezone(timezone.utc)
+        day_end_utc = day_end_local.astimezone(timezone.utc)
+
+        # Chỉ lấy thuốc/schedule đang active của profile hiện tại.
         stmt = (
             select(Medication, MedicationSchedule)
             .join(MedicationSchedule, MedicationSchedule.medication_id == Medication.id)
@@ -34,30 +42,77 @@ def log_dose(profile_id: str, medication_name: str, status: str = "taken", note:
             .join(MedicalRecord, TreatmentPeriod.record_id == MedicalRecord.id)
             .where(MedicalRecord.profile_id == pid)
             .where(Medication.medication_name.ilike(f"%{med_name}%"))
+            .where((Medication.status.is_(None)) | (Medication.status == "active"))
+            .where((MedicationSchedule.status.is_(None)) | (MedicationSchedule.status == "active"))
             .order_by(MedicationSchedule.scheduled_time.asc())
         )
-        row = db.execute(stmt).first()
-        if not row:
+        rows = db.execute(stmt).all()
+        if not rows:
             return tool_error(f"Không tìm thấy thuốc '{med_name}' trong tủ thuốc của bạn.", code="NOT_FOUND")
-        med, sch = row
+
+        # Chọn schedule phù hợp trong ngày hiện tại:
+        # - ưu tiên slot chưa có log hôm nay
+        # - gần thời điểm hiện tại nhất
+        candidates: list[tuple[float, bool, Medication, MedicationSchedule, datetime]] = []
+        for med, sch in rows:
+            scheduled_local = day_start_local.replace(
+                hour=sch.scheduled_time.hour,
+                minute=sch.scheduled_time.minute,
+                second=0,
+                microsecond=0,
+            )
+            scheduled_utc = scheduled_local.astimezone(timezone.utc)
+            existing_log = db.scalar(
+                select(MedicationLog.id)
+                .where(
+                    and_(
+                        MedicationLog.schedule_id == sch.id,
+                        MedicationLog.profile_id == pid,
+                        MedicationLog.scheduled_datetime >= day_start_utc,
+                        MedicationLog.scheduled_datetime < day_end_utc,
+                    )
+                )
+                .limit(1)
+            )
+            is_unlogged_today = existing_log is None
+            distance = abs((scheduled_utc - now_utc).total_seconds())
+            candidates.append((distance, is_unlogged_today, med, sch, scheduled_utc))
+
+        if not candidates:
+            return tool_error(
+                f"Không tìm thấy lịch uống hiện tại cho thuốc '{med_name}'.",
+                code="NO_ACTIVE_SCHEDULE",
+            )
+
+        # sort: unlogged first, then nearest slot
+        candidates.sort(key=lambda x: (0 if x[1] else 1, x[0]))
+        _, _, med, sch, scheduled_dt = candidates[0]
+
         actual_at = None
         if recorded_at.strip():
             try:
                 actual_at = datetime.fromisoformat(recorded_at.strip())
             except Exception:
                 actual_at = None
+        if actual_at is not None and actual_at.tzinfo is None:
+            actual_at = actual_at.replace(tzinfo=timezone.utc)
+
         log = MedicationLog(
             schedule_id=sch.id,
             profile_id=pid,
-            scheduled_datetime=datetime.now(timezone.utc),
-            actual_datetime=actual_at or datetime.now(timezone.utc),
+            scheduled_datetime=scheduled_dt,
+            actual_datetime=actual_at or now_utc,
             status=(status or "taken").strip(),
             notes=(note or "").strip() or None,
         )
         db.add(log)
         db.commit()
         db.refresh(log)
-        return tool_ok(f"Đã ghi nhận liều {med.medication_name}: {log.status}.", data_ref=str(log.id))
+        hhmm = sch.scheduled_time.strftime("%H:%M")
+        return tool_ok(
+            f"Đã ghi nhận liều {med.medication_name} ({hhmm}) với trạng thái {log.status}.",
+            data_ref=str(log.id),
+        )
     except Exception as exc:
         db.rollback()
         return tool_error(f"Lỗi ghi nhận liều: {exc}")

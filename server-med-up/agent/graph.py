@@ -32,6 +32,10 @@ def _route_after_intent(state: PatientState) -> str:
 def _route_after_reasoning(state: PatientState) -> str:
     if state.get("tool_calls"):
         return "tool_executor"
+    if state.get("pending_write_action") and (
+        bool(state.get("user_confirms_pending")) or bool(state.get("user_rejects_pending"))
+    ):
+        return "tool_executor"
     return "safety_guard"
 
 

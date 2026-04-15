@@ -8,11 +8,13 @@ class AiChatComposer extends StatefulWidget {
     super.key,
     this.controller,
     this.onSend,
+    this.onAttachImage,
     this.enabled = true,
   });
 
   final TextEditingController? controller;
   final VoidCallback? onSend;
+  final VoidCallback? onAttachImage;
   final bool enabled;
 
   @override
@@ -74,7 +76,7 @@ class _AiChatComposerState extends State<AiChatComposer> {
           child: Row(
             children: [
               IconButton(
-                onPressed: widget.enabled ? () {} : null,
+                onPressed: widget.enabled ? widget.onAttachImage : null,
                 icon: const Icon(Icons.add_circle_outline_rounded),
                 color: VitalisColors.primary,
                 style: IconButton.styleFrom(minimumSize: const Size(48, 48)),
@@ -88,12 +90,14 @@ class _AiChatComposerState extends State<AiChatComposer> {
                   textInputAction: TextInputAction.send,
                   onSubmitted: (_) => _handleSend(),
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: VitalisColors.onSurface,
-                      ),
+                    color: VitalisColors.onSurface,
+                  ),
                   decoration: InputDecoration(
                     hintText: AppLocalizations.of(context).aiComposerHint,
                     hintStyle: TextStyle(
-                      color: VitalisColors.outlineVariantBase.withValues(alpha: 0.65),
+                      color: VitalisColors.outlineVariantBase.withValues(
+                        alpha: 0.65,
+                      ),
                     ),
                     border: InputBorder.none,
                     isDense: true,
@@ -113,14 +117,20 @@ class _AiChatComposerState extends State<AiChatComposer> {
                           color: VitalisColors.primary,
                           shape: const CircleBorder(),
                           elevation: 2,
-                          shadowColor: VitalisColors.primary.withValues(alpha: 0.35),
+                          shadowColor: VitalisColors.primary.withValues(
+                            alpha: 0.35,
+                          ),
                           child: InkWell(
                             onTap: _handleSend,
                             customBorder: const CircleBorder(),
                             child: const SizedBox(
                               width: 48,
                               height: 48,
-                              child: Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                              child: Icon(
+                                Icons.send_rounded,
+                                color: Colors.white,
+                                size: 20,
+                              ),
                             ),
                           ),
                         )

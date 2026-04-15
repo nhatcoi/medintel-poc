@@ -20,6 +20,7 @@ async def scan_prescription(
     file: UploadFile = File(...),
     profile_id: str | None = Form(None),
     user_id: str | None = Form(None),  # legacy compatibility from client
+    persist: bool = Form(True),
 ):
     mime = (file.content_type or "").lower()
     if mime not in ALLOWED_MIME:
@@ -36,6 +37,8 @@ async def scan_prescription(
         )
 
     result = await extract_prescription(image_bytes, mime_type=mime)
+    if not persist:
+        return ScanResult(**result)
 
     resolved_profile_id = (
         (profile_id or "").strip()

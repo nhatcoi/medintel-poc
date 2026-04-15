@@ -34,6 +34,34 @@ class SuggestedChatAction {
   final SuggestedActionKind kind;
 }
 
+class ScannedMedicationPreview {
+  const ScannedMedicationPreview({
+    required this.name,
+    this.dosage,
+    this.frequency,
+    this.instructions,
+    this.times = const [],
+  });
+
+  final String name;
+  final String? dosage;
+  final String? frequency;
+  final String? instructions;
+  final List<String> times;
+}
+
+class ScanPrescriptionPreviewResult {
+  const ScanPrescriptionPreviewResult({
+    required this.diseaseName,
+    required this.medications,
+  });
+
+  final String diseaseName;
+  final List<ScannedMedicationPreview> medications;
+
+  bool get looksLikePrescription => medications.isNotEmpty;
+}
+
 class AiChatAssistantTurn extends AiChatItem {
   const AiChatAssistantTurn({
     required this.body,
@@ -51,10 +79,7 @@ class AiChatAssistantTurn extends AiChatItem {
 }
 
 class AiChatUserTurn extends AiChatItem {
-  const AiChatUserTurn({
-    required this.body,
-    required this.timeLabel,
-  });
+  const AiChatUserTurn({required this.body, required this.timeLabel});
 
   final String body;
   final String timeLabel;

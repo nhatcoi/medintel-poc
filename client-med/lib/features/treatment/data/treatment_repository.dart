@@ -269,6 +269,15 @@ class TreatmentRepository {
     return MedicationScheduleItem.fromJson(data);
   }
 
+  Future<void> deleteSchedule({
+    required String medicationId,
+    required String scheduleId,
+  }) async {
+    await _api.client.delete(
+      '${ApiPaths.treatmentMedications}/$medicationId/schedules/$scheduleId',
+    );
+  }
+
   Future<AdherenceSummary> getAdherenceSummary({
     required String profileId,
     int days = 7,
