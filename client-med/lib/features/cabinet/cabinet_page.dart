@@ -140,6 +140,34 @@ class _CabinetPageState extends ConsumerState<CabinetPage> {
         );
   }
 
+  Future<void> _deleteMedication(MedicationItem item) async {
+    final profileId = ref.read(activeProfileIdProvider);
+    if (profileId == null || profileId.isEmpty) return;
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Gỡ thuốc?'),
+        content: Text('Bạn có chắc chắn muốn gỡ ${item.name} khỏi tủ thuốc?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Hủy')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Gỡ'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+
+    await ref.read(treatmentProvider.notifier).deleteMedication(
+          profileId: profileId,
+          medicationId: item.medicationId,
+        );
+    await _reload();
+  }
+
   static String _shortTime(String raw) =>
       raw.length >= 5 ? raw.substring(0, 5) : raw;
 
@@ -216,6 +244,7 @@ class _CabinetPageState extends ConsumerState<CabinetPage> {
                         item: m,
                         schedules: schedulesByMed[m.medicationId] ?? const [],
                         onUpdateInventory: () => _updateInventory(m),
+                        onDelete: () => _deleteMedication(m),
                         onSetupSchedule: () => _setupSchedule(m),
                         onRemoveSchedule: (s) => _removeSchedule(m, s),
                       ),
@@ -240,6 +269,7 @@ class _CabinetMedicationCard extends StatelessWidget {
     required this.item,
     required this.schedules,
     required this.onUpdateInventory,
+    required this.onDelete,
     required this.onSetupSchedule,
     required this.onRemoveSchedule,
   });
@@ -247,6 +277,7 @@ class _CabinetMedicationCard extends StatelessWidget {
   final MedicationItem item;
   final List<MedicationScheduleItem> schedules;
   final VoidCallback onUpdateInventory;
+  final VoidCallback onDelete;
   final VoidCallback onSetupSchedule;
   final void Function(MedicationScheduleItem schedule) onRemoveSchedule;
 
@@ -347,19 +378,31 @@ class _CabinetMedicationCard extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
+              OutlinedButton(
+                onPressed: onDelete,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: scheme.error,
+                  side: BorderSide(color: scheme.error.withValues(alpha: 0.4)),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                ),
+                child: const Text('Gỡ', style: TextStyle(fontWeight: FontWeight.w700)),
+              ),
+              const SizedBox(width: 10),
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: onUpdateInventory,
-                  icon: const Icon(LucideIcons.archive),
-                  label: Text(hasInventory ? 'Cập nhật tồn kho' : 'Thiết lập tồn kho'),
+                  icon: const Icon(LucideIcons.archive, size: 16),
+                  label: Text(hasInventory ? 'Cập nhật kho' : 'Thiết lập kho', style: const TextStyle(fontSize: 13)),
+                  style: OutlinedButton.styleFrom(padding: EdgeInsets.zero),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: FilledButton.icon(
                   onPressed: onSetupSchedule,
-                  icon: const Icon(LucideIcons.alarmClock, size: 18),
-                  label: const Text('Thêm giờ'),
+                  icon: const Icon(LucideIcons.alarmClock, size: 16),
+                  label: const Text('Thêm giờ', style: TextStyle(fontSize: 13)),
+                  style: FilledButton.styleFrom(padding: EdgeInsets.zero),
                 ),
               ),
             ],

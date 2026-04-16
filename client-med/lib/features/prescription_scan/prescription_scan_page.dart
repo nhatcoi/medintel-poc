@@ -76,6 +76,7 @@ class _PrescriptionScanPageState extends ConsumerState<PrescriptionScanPage> {
       final result = await _ocrService.scanPrescription(
         bytes,
         profileId: profileId,
+        persist: false,
       );
       if (!mounted) return;
       setState(() {
@@ -132,10 +133,14 @@ class _PrescriptionScanPageState extends ConsumerState<PrescriptionScanPage> {
     });
 
     try {
-      // Server scan đã auto-persist. Chỉ fallback tạo tay nếu chưa lưu được.
+      final validMeds = result.medications
+          .where((m) => m.name.trim().isNotEmpty)
+          .toList();
+      int addedCount = 0;
+
       if (result.savedMedications.isEmpty) {
         final notifier = ref.read(treatmentProvider.notifier);
-        for (final med in result.medications) {
+        for (final med in validMeds) {
           await notifier.addMedication(
             profileId: profileId,
             medicationName: med.name,
@@ -145,17 +150,15 @@ class _PrescriptionScanPageState extends ConsumerState<PrescriptionScanPage> {
             scheduleTimes: med.times,
           );
         }
+        addedCount = validMeds.length;
       } else {
         await ref.read(treatmentProvider.notifier).loadMedications(profileId);
+        addedCount = result.savedMedications.length;
       }
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Đã thêm ${result.savedMedications.isNotEmpty ? result.savedMedications.length : result.medications.length} thuốc vào lịch uống.',
-          ),
-        ),
+        SnackBar(content: Text('Đã thêm $addedCount thuốc vào lịch uống.')),
       );
       context.go('/home');
     } catch (e) {
@@ -174,18 +177,15 @@ class _PrescriptionScanPageState extends ConsumerState<PrescriptionScanPage> {
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
-      color: VitalisColors.background,
-      child: Column(
-        children: [
-          ScanTopBar(
-            hasImage: _imageBytes != null,
-            onReset: _reset,
-          ),
-          Expanded(
-            child: _buildBody(),
-          ),
-        ],
+    return Scaffold(
+      backgroundColor: VitalisColors.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            ScanTopBar(hasImage: _imageBytes != null, onReset: _reset),
+            Expanded(child: _buildBody()),
+          ],
+        ),
       ),
     );
   }
@@ -241,12 +241,19 @@ class _PrescriptionScanPageState extends ConsumerState<PrescriptionScanPage> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.error_outline, color: Color(0xFFD32F2F), size: 20),
+                const Icon(
+                  Icons.error_outline,
+                  color: Color(0xFFD32F2F),
+                  size: 20,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     _error!,
-                    style: const TextStyle(color: Color(0xFFD32F2F), fontSize: 13),
+                    style: const TextStyle(
+                      color: Color(0xFFD32F2F),
+                      fontSize: 13,
+                    ),
                   ),
                 ),
               ],
@@ -262,7 +269,14 @@ class _PrescriptionScanPageState extends ConsumerState<PrescriptionScanPage> {
           ),
         ],
         if (_scanResult != null) ...[
-          ScanResultView(result: _scanResult!),
+          ScanResultView(
+            result: _scanResult!,
+            onResultChanged: (newResult) {
+              setState(() {
+                _scanResult = newResult;
+              });
+            },
+          ),
           const SizedBox(height: 12),
           if (_scanResult!.medications.isNotEmpty)
             SizedBox(

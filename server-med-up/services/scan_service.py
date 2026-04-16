@@ -110,7 +110,11 @@ async def extract_prescription(image_bytes: bytes, mime_type: str = "image/jpeg"
                         "prescription_date": data.get("date"),
                         "medications": _normalize_medications(data.get("medicines")),
                     }
-                print(f"Kaggle OCR failed ({response.status_code}), falling back to vision LLM...")
+                
+                # Debug logging for Kaggle errors
+                error_body = response.text[:500]
+                print(f"Kaggle OCR Error ({response.status_code}): {error_body}")
+                print(f"Falling back to vision LLM...")
             except Exception as e:
                 print(f"Kaggle OCR unreachable: {e}. Falling back to vision LLM...")
     # ----------------------------------------

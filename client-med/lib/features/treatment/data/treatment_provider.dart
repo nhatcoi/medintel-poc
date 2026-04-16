@@ -182,6 +182,22 @@ class TreatmentNotifier extends StateNotifier<TreatmentState> {
     await loadCabinet(profileId);
   }
 
+  Future<void> deleteMedication({
+    required String profileId,
+    required String medicationId,
+  }) async {
+    state = state.copyWith(loading: true, error: null);
+    try {
+      await _repo.deleteMedication(
+        medicationId: medicationId,
+        profileId: profileId,
+      );
+      await loadCabinet(profileId);
+    } catch (e) {
+      state = state.copyWith(loading: false, error: e.toString());
+    }
+  }
+
   Future<void> logDose({
     required String profileId,
     required String medicationId,

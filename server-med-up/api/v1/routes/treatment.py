@@ -218,7 +218,7 @@ def get_low_stock(db: DbSession, profile_id: str = Query(...)):
     return [LowStockItem(**row) for row in rows]
 
 
-@router.delete("/medications/{medication_id}")
+@router.delete("/medications/{medication_id}/")
 def delete_medication(medication_id: str, db: DbSession):
     try:
         mid = uuid.UUID(medication_id.strip())

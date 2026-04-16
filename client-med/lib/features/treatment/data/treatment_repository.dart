@@ -105,6 +105,16 @@ class TreatmentRepository {
     return MedicationItem.fromJson(data);
   }
 
+  Future<void> deleteMedication({
+    required String medicationId,
+    required String profileId,
+  }) async {
+    await _api.client.delete(
+      '${ApiPaths.treatmentMedications}/$medicationId/',
+      queryParameters: {'profile_id': profileId},
+    );
+  }
+
   Future<MedicationItem> updateMedicationInventory({
     required String medicationId,
     required double remainingQuantity,

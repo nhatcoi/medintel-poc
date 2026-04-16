@@ -18,7 +18,12 @@ def get_medications_by_profile(db: Session, profile_id: uuid.UUID) -> list[Medic
         select(Medication)
         .join(TreatmentPeriod, Medication.period_id == TreatmentPeriod.id)
         .join(MedicalRecord, TreatmentPeriod.record_id == MedicalRecord.id)
-        .where(MedicalRecord.profile_id == profile_id)
+        .where(
+            and_(
+                MedicalRecord.profile_id == profile_id,
+                Medication.status == "active"
+            )
+        )
         .order_by(Medication.medication_name)
     )
     return list(db.scalars(stmt).all())
@@ -231,7 +236,12 @@ def list_schedules_by_profile(db: Session, profile_id: uuid.UUID) -> list[tuple[
         .join(Medication, MedicationSchedule.medication_id == Medication.id)
         .join(TreatmentPeriod, Medication.period_id == TreatmentPeriod.id)
         .join(MedicalRecord, TreatmentPeriod.record_id == MedicalRecord.id)
-        .where(MedicalRecord.profile_id == profile_id)
+        .where(
+            and_(
+                MedicalRecord.profile_id == profile_id,
+                Medication.status == "active"
+            )
+        )
         .order_by(MedicationSchedule.scheduled_time.asc(), Medication.medication_name.asc())
     )
     return list(db.execute(stmt).all())

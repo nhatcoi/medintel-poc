@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../../core/constants/api_paths.dart';
@@ -27,7 +28,8 @@ class MedicationSearchSheet extends ConsumerStatefulWidget {
   const MedicationSearchSheet({super.key});
 
   @override
-  ConsumerState<MedicationSearchSheet> createState() => _MedicationSearchSheetState();
+  ConsumerState<MedicationSearchSheet> createState() =>
+      _MedicationSearchSheetState();
 }
 
 class _MedicationSearchSheetState extends ConsumerState<MedicationSearchSheet> {
@@ -51,7 +53,10 @@ class _MedicationSearchSheetState extends ConsumerState<MedicationSearchSheet> {
       _items = const [];
     });
     try {
-      final searchResp = await ref.read(apiServiceProvider).client.get<Map<String, dynamic>>(
+      final searchResp = await ref
+          .read(apiServiceProvider)
+          .client
+          .get<Map<String, dynamic>>(
             ApiPaths.treatmentMedicationsSearch,
             queryParameters: {'q': q, 'limit': 12},
           );
@@ -84,15 +89,20 @@ class _MedicationSearchSheetState extends ConsumerState<MedicationSearchSheet> {
       } else {
         // fallback: ask agentic to synthesize one suggestion when DB returns empty.
         final profileId = ref.read(activeProfileIdProvider);
-        final prompt = '''
+        final prompt =
+            '''
 Tìm thuốc "$q". Trả về JSON duy nhất:
 {"name":"", "summary":"", "dosage":"", "instructions":"", "schedule_time":"08:00"}
 ''';
-        final resp = await ref.read(apiServiceProvider).client.post<Map<String, dynamic>>(
+        final resp = await ref
+            .read(apiServiceProvider)
+            .client
+            .post<Map<String, dynamic>>(
               ApiPaths.chatMessage,
               data: {
                 'text': prompt,
-                if (profileId != null && profileId.isNotEmpty) 'profile_id': profileId,
+                if (profileId != null && profileId.isNotEmpty)
+                  'profile_id': profileId,
               },
             );
         final reply = (resp.data?['reply'] ?? '').toString();
@@ -115,7 +125,8 @@ Tìm thuốc "$q". Trả về JSON duy nhất:
                 summary: (jsonObj['summary'] ?? '').toString(),
                 dosageSuggestion: jsonObj['dosage']?.toString(),
                 instructionsSuggestion: jsonObj['instructions']?.toString(),
-                scheduleSuggestion: (jsonObj['schedule_time'] ?? '08:00').toString(),
+                scheduleSuggestion: (jsonObj['schedule_time'] ?? '08:00')
+                    .toString(),
               ),
             ];
           });
@@ -139,22 +150,37 @@ Tìm thuốc "$q". Trả về JSON duy nhất:
       top: false,
       child: SingleChildScrollView(
         child: Padding(
-          padding: EdgeInsets.fromLTRB(16, 12, 16, 16 + MediaQuery.of(context).viewInsets.bottom),
+          padding: EdgeInsets.fromLTRB(
+            16,
+            12,
+            16,
+            16 + MediaQuery.of(context).viewInsets.bottom,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Center(
-                child: Container(width: 44, height: 5, decoration: BoxDecoration(color: Theme.of(context).colorScheme.outlineVariant, borderRadius: BorderRadius.circular(999))),
+                child: Container(
+                  width: 44,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
               ),
               const SizedBox(height: 12),
-              const Text('Tìm thuốc', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+              const Text(
+                'Tìm thuốc',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+              ),
               const SizedBox(height: 10),
               Text(
                 'Full-text search',
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 8),
               TextField(
@@ -170,9 +196,30 @@ Tìm thuốc "$q". Trả về JSON duy nhất:
                 ),
                 onSubmitted: (_) => _search(),
               ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    context.push('/scan');
+                  },
+                  icon: const Icon(LucideIcons.scanLine, size: 20),
+                  label: const Text('Quét đơn thuốc bằng AI'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
               if (_error != null) ...[
                 const SizedBox(height: 10),
-                Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                Text(
+                  _error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
               ],
               const SizedBox(height: 10),
               if (_loading) const LinearProgressIndicator(),
@@ -180,8 +227,15 @@ Tìm thuốc "$q". Trả về JSON duy nhất:
                 Card(
                   margin: const EdgeInsets.only(top: 8),
                   child: ListTile(
-                    title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.w700)),
-                    subtitle: Text(item.summary, maxLines: 3, overflow: TextOverflow.ellipsis),
+                    title: Text(
+                      item.name,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    subtitle: Text(
+                      item.summary,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     trailing: const Icon(LucideIcons.chevronRight),
                     onTap: () => Navigator.of(context).pop(item),
                   ),
@@ -206,4 +260,3 @@ Map<String, dynamic>? _tryParseFirstJson(String text) {
   } catch (_) {}
   return null;
 }
-

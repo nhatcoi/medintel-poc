@@ -15,9 +15,11 @@ final class OcrService {
     Uint8List bytes, {
     String filename = 'prescription.jpg',
     String? profileId,
+    bool persist = false,
   }) async {
     final fields = <String, dynamic>{
       'file': MultipartFile.fromBytes(bytes, filename: filename),
+      'persist': persist.toString(),
     };
     if (profileId != null && profileId.trim().isNotEmpty) {
       fields['profile_id'] = profileId.trim();
@@ -54,6 +56,26 @@ class ScanResult {
   final List<ScannedMedication> medications;
   final String? prescriptionId;
   final List<SavedMedicationRef> savedMedications;
+
+  ScanResult copyWith({
+    String? doctorName,
+    String? issuedDate,
+    String? patientName,
+    String? rawText,
+    List<ScannedMedication>? medications,
+    String? prescriptionId,
+    List<SavedMedicationRef>? savedMedications,
+  }) {
+    return ScanResult(
+      doctorName: doctorName ?? this.doctorName,
+      issuedDate: issuedDate ?? this.issuedDate,
+      patientName: patientName ?? this.patientName,
+      rawText: rawText ?? this.rawText,
+      medications: medications ?? this.medications,
+      prescriptionId: prescriptionId ?? this.prescriptionId,
+      savedMedications: savedMedications ?? this.savedMedications,
+    );
+  }
 
   factory ScanResult.fromJson(Map<String, dynamic> json) {
     final medsRaw = json['medications'] as List<dynamic>? ?? [];
@@ -105,6 +127,22 @@ class ScannedMedication {
   final String? frequency;
   final String? instructions;
   final List<String> times;
+
+  ScannedMedication copyWith({
+    String? name,
+    String? dosage,
+    String? frequency,
+    String? instructions,
+    List<String>? times,
+  }) {
+    return ScannedMedication(
+      name: name ?? this.name,
+      dosage: dosage ?? this.dosage,
+      frequency: frequency ?? this.frequency,
+      instructions: instructions ?? this.instructions,
+      times: times ?? this.times,
+    );
+  }
 
   factory ScannedMedication.fromJson(Map<String, dynamic> json) {
     final timesRaw = json['times'] as List<dynamic>? ?? [];

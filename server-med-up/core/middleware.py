@@ -53,13 +53,35 @@ class HttpLoggingMiddleware(BaseHTTPMiddleware):
             req_info["request_headers"] = dict(request.headers)
             req_info["response_headers"] = dict(rebuilt.headers)
         if settings.http_log_bodies:
-            req_info["request_body"] = _clip(
-                request_body.decode("utf-8", errors="replace"),
-                settings.http_log_body_max_chars,
-            )
-            req_info["response_body"] = _clip(
-                response_body.decode("utf-8", errors="replace"),
-                settings.http_log_body_max_chars,
-            )
+            # Avoid logging huge binary blobs (e.g. image uploads)
+            content_type = request.headers.get("Content-Type", "").lower()
+            is_binary = any(t in content_type for t in ["image/", "multipart/", "application/octet-stream"])
+            
+            if is_binary:
+                req_info["request_body"] = f"<{content_type} binary data>"
+            else:
+                try:
+                    req_info["request_body"] = _clip(
+                        request_body.decode("utf-8"),
+                        settings.http_log_body_max_chars,
+                    )
+                except UnicodeDecodeError:
+                    req_info["request_body"] = "<binary data (decode failed)>"
+
+            # Similarly for response body
+            resp_content_type = rebuilt.headers.get("Content-Type", "").lower()
+            resp_is_binary = any(t in resp_content_type for t in ["image/", "application/pdf"])
+            
+            if resp_is_binary:
+                req_info["response_body"] = f"<{resp_content_type} binary data>"
+            else:
+                try:
+                    req_info["response_body"] = _clip(
+                        response_body.decode("utf-8"),
+                        settings.http_log_body_max_chars,
+                    )
+                except UnicodeDecodeError:
+                    req_info["response_body"] = "<binary data (decode failed)>"
+        
         _log.info("API_TRACE %s", req_info)
         return rebuilt

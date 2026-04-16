@@ -20,7 +20,7 @@ async def scan_prescription(
     file: UploadFile = File(...),
     profile_id: str | None = Form(None),
     user_id: str | None = Form(None),  # legacy compatibility from client
-    persist: bool = Form(True),
+    persist: bool = Form(False),
 ):
     mime = (file.content_type or "").lower()
     if mime not in ALLOWED_MIME:
