@@ -50,3 +50,4 @@ class CareGroupPatient(Base):
     patient_id: Mapped[uuid.UUID] = mapped_column(GUID, ForeignKey("profiles.profile_id"), index=True)
     added_by_profile_id: Mapped[uuid.UUID] = mapped_column(GUID, ForeignKey("profiles.profile_id"))
     added_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    consent_status: Mapped[str] = mapped_column(String(64), default="granted")

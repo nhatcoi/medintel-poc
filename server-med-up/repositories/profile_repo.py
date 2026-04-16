@@ -20,6 +20,10 @@ def get_by_email(db: Session, email: str) -> Profile | None:
     return db.scalars(select(Profile).where(Profile.email == email)).first()
 
 
+def get_by_phone(db: Session, phone: str) -> Profile | None:
+    return db.scalars(select(Profile).where(Profile.phone_number == phone)).first()
+
+
 def create(db: Session, *, full_name: str, role: str = "patient", **kwargs) -> Profile:
     p = Profile(full_name=full_name, role=role, **kwargs)
     db.add(p)

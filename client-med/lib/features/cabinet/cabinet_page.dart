@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../../providers/providers.dart';
+import '../../core/theme/vitalis_colors.dart';
 import '../home/widgets/home_schedule_header.dart';
 import '../medication/widgets/add_medication_sheet.dart';
 import '../medication/widgets/medication_search_sheet.dart';
@@ -255,10 +256,58 @@ class _CabinetPageState extends ConsumerState<CabinetPage> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openAddMedication,
-        icon: const Icon(LucideIcons.pill),
-        label: const Text('Thêm thuốc'),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.all(4.0),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: _openAddMedication,
+            borderRadius: BorderRadius.circular(22),
+            child: Ink(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    VitalisColors.primary,
+                    VitalisColors.primary.withValues(alpha: 0.85),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(22),
+                boxShadow: [
+                  BoxShadow(
+                    color: VitalisColors.primary.withValues(alpha: 0.3),
+                    blurRadius: 16,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 15),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      LucideIcons.plus,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    SizedBox(width: 10),
+                    Text(
+                      'Thêm thuốc',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

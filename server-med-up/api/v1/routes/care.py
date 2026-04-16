@@ -171,6 +171,7 @@ def list_group_patients(db: DbSession, group_id: str | None = Query(None)):
             patient_id=str(r.patient_id),
             added_by_profile_id=str(r.added_by_profile_id),
             added_at=r.added_at,
+            consent_status=r.consent_status,
         )
         for r in rows
     ]
@@ -182,6 +183,7 @@ def create_group_patient(body: CareGroupPatientCreate, db: DbSession):
         group_id=_uuid(body.group_id, "Invalid group_id"),
         patient_id=_uuid(body.patient_id, "Invalid patient_id"),
         added_by_profile_id=_uuid(body.added_by_profile_id, "Invalid added_by_profile_id"),
+        consent_status=body.consent_status,
     )
     db.add(row)
     db.commit()
@@ -192,6 +194,7 @@ def create_group_patient(body: CareGroupPatientCreate, db: DbSession):
         patient_id=str(row.patient_id),
         added_by_profile_id=str(row.added_by_profile_id),
         added_at=row.added_at,
+        consent_status=row.consent_status,
     )
 
 
@@ -287,4 +290,33 @@ def delete_caregiver_link(link_id: str, db: DbSession):
     db.delete(row)
     db.commit()
     return {"ok": True, "link_id": link_id}
+
+
+@router.get("/my-patients")
+def list_my_patients(db: DbSession, profile_id: str = Query(..., description="The caregiver profile ID")):
+    """
+    Returns a list of patients inside groups where this profile_id acts as a member/caregiver.
+    """
+    from repositories.care_repo import CareRepository
+    care_repo = CareRepository(db)
+    
+    uid = _uuid(profile_id, "Invalid profile_id")
+    groups = care_repo.get_groups_for_member(uid)
+    
+    unique_patients = set()
+    patients_list = []
+    
+    for g in groups:
+        patients = care_repo.get_patients_for_group(g.id)
+        for p in patients:
+            if p.id not in unique_patients:
+                unique_patients.add(p.id)
+                # Just return raw dict instead of strict BaseModel 
+                # in case ProfileRead requires full attrs
+                patients_list.append({
+                    "id": str(p.id),
+                    "full_name": p.full_name,
+                    "role": p.role,
+                })
+    return patients_list
 

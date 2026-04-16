@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/local_medintel_state.dart';
+import '../../../providers/providers.dart';
 import '../../../providers/shared_preferences_provider.dart';
 
 const String _prefsKey = 'caregiver_profiles_v1';
@@ -104,53 +105,70 @@ final caregiverProfilesProvider =
 );
 
 class CaregiverProfilesNotifier extends Notifier<CareProfilesState> {
+  bool _initialized = false;
+
   @override
   CareProfilesState build() {
-    final prefs = ref.watch(sharedPreferencesProvider);
-    final raw = prefs?.getString(_prefsKey);
-    if (raw == null || raw.isEmpty) return const CareProfilesState();
-    try {
-      final json = jsonDecode(raw);
-      if (json is Map<String, dynamic>) {
-        final loaded = CareProfilesState.fromJson(json);
-        final cleaned = _cleanupLegacyProfiles(loaded);
-        if (_isStateChanged(loaded, cleaned)) {
-          Future.microtask(_save);
-        }
-        return cleaned;
-      }
-    } catch (_) {}
+    // Return empty initially, load in microtask or via an explicit fetch
+    if (!_initialized) {
+      _initialized = true;
+      Future.microtask(_fetchFromBackend);
+    }
     return const CareProfilesState();
   }
 
-  CareProfilesState _cleanupLegacyProfiles(CareProfilesState src) {
-    String normalize(String s) => s.trim().toLowerCase();
-    const blocked = {'124', 'con gai'};
-    final profiles = src.profiles.where((p) {
-      if (p.id == 'primary') return true;
-      final name = normalize(p.displayName);
-      final relation = normalize(p.relationshipLabel);
-      return !blocked.contains(name) && !blocked.contains(relation);
-    }).toList();
+  Future<void> _fetchFromBackend() async {
+    try {
+      final api = ref.read(apiServiceProvider);
+      final profileId = ref.read(authProvider).user?.id;
+      if (profileId == null) return;
 
-    String? selected = src.selectedProfileId;
-    if (selected != null && profiles.every((p) => p.id != selected)) {
-      selected = profiles.isNotEmpty ? profiles.first.id : null;
+      // Fetch dynamic groups where user is a caregiver
+      final response = await api.client.get(
+        '/api/v1/care/my-patients',
+        queryParameters: {'profile_id': profileId},
+      );
+      if (response.data is List) {
+        final List<CareProfile> remoteProfiles = [];
+        for (var item in response.data) {
+          final pId = item['id']?.toString() ?? '';
+          if (pId.isEmpty) continue;
+          remoteProfiles.add(CareProfile(
+            id: 'p_$pId', // temporary UI id
+            profileId: pId,
+            displayName: item['full_name']?.toString() ?? 'Ng\u01b0\u1eddi d\u00f9ng',
+            relationshipLabel: item['role']?.toString() ?? 'Patient',
+            localState: LocalMedintelState.empty,
+          ));
+        }
+
+        // Keep "Bạn" (primary) profile automatically if needed, or if it comes from my-patients?
+        // Usually caregivers manage *other* patients. But let's check `authProvider`.
+        await syncPrimaryProfile(
+           displayName: "Tôi", 
+           profileId: ref.read(authProvider).user?.id ?? "", 
+           localState: LocalMedintelState.empty,
+           silent: true, // Internal silent sync
+        );
+        
+        final existingPrimary = state.profiles.where((p) => p.id == 'primary').toList();
+        final finalProfiles = [...existingPrimary, ...remoteProfiles];
+
+        state = state.copyWith(
+          profiles: finalProfiles,
+          selectedProfileId: state.selectedProfileId ?? 'primary',
+        );
+      }
+    } catch (e) {
+      // Fallback
     }
-    return CareProfilesState(
-      profiles: profiles,
-      selectedProfileId: selected,
-    );
-  }
-
-  bool _isStateChanged(CareProfilesState a, CareProfilesState b) {
-    return jsonEncode(a.toJson()) != jsonEncode(b.toJson());
   }
 
   Future<void> syncPrimaryProfile({
     required String displayName,
     required String profileId,
     required LocalMedintelState localState,
+    bool silent = false,
   }) async {
     CareProfile? existing;
     for (final p in state.profiles) {
@@ -161,17 +179,12 @@ class CaregiverProfilesNotifier extends Notifier<CareProfilesState> {
     }
     final primary = CareProfile(
       id: 'primary',
-      profileId: profileId.trim().isEmpty ? (existing?.profileId ?? _randomUuidV4()) : profileId.trim(),
-      displayName: displayName.trim().isEmpty ? 'Bạn' : displayName.trim(),
-      relationshipLabel: 'Bản thân',
+      profileId: profileId.trim().isEmpty ? (existing?.profileId ?? '') : profileId.trim(),
+      displayName: displayName.trim().isEmpty ? 'B\u1ea3n th\u00e2n' : displayName.trim(),
+      relationshipLabel: 'C\u00e1 nh\u00e2n',
       localState: localState,
     );
-    if (existing != null &&
-        existing.displayName == primary.displayName &&
-        LocalMedintelState.encode(existing.localState) ==
-            LocalMedintelState.encode(primary.localState)) {
-      return;
-    }
+    
     final next = [...state.profiles];
     if (existing == null) {
       next.insert(0, primary);
@@ -186,7 +199,6 @@ class CaregiverProfilesNotifier extends Notifier<CareProfilesState> {
               ? 'primary'
               : state.selectedProfileId,
     );
-    await _save();
   }
 
   Future<void> addProfile({
@@ -194,43 +206,12 @@ class CaregiverProfilesNotifier extends Notifier<CareProfilesState> {
     required String displayName,
     required String relationshipLabel,
   }) async {
-    final id = 'p_${DateTime.now().microsecondsSinceEpoch}_${Random().nextInt(1 << 24)}';
-    final row = CareProfile(
-      id: id,
-      profileId: profileId,
-      displayName: displayName.trim(),
-      relationshipLabel: relationshipLabel.trim().isEmpty ? 'Gia đình' : relationshipLabel.trim(),
-      localState: LocalMedintelState.empty,
-    );
-    state = state.copyWith(
-      profiles: [...state.profiles, row],
-      selectedProfileId: id,
-    );
-    await _save();
+    // Re-fetch from backend to update state correctly
+    await _fetchFromBackend();
   }
 
   Future<void> selectProfile(String id) async {
     if (state.profiles.every((p) => p.id != id)) return;
     state = state.copyWith(selectedProfileId: id);
-    await _save();
-  }
-
-  Future<void> _save() async {
-    final prefs = ref.read(sharedPreferencesProvider);
-    await prefs?.setString(_prefsKey, jsonEncode(state.toJson()));
-  }
-
-  String _randomUuidV4() {
-    final rand = Random();
-    final bytes = List<int>.generate(16, (_) => rand.nextInt(256));
-    bytes[6] = (bytes[6] & 0x0f) | 0x40;
-    bytes[8] = (bytes[8] & 0x3f) | 0x80;
-    String hex(int b) => b.toRadixString(16).padLeft(2, '0');
-    final h = bytes.map(hex).join();
-    return '${h.substring(0, 8)}-'
-        '${h.substring(8, 12)}-'
-        '${h.substring(12, 16)}-'
-        '${h.substring(16, 20)}-'
-        '${h.substring(20, 32)}';
   }
 }

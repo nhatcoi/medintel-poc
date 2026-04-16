@@ -182,6 +182,14 @@ def get_profile(profile_id: str, db: DbSession):
     return _to_profile_read(p)
 
 
+@router.get("/phone/{phone}", response_model=ProfileRead)
+def get_profile_by_phone(phone: str, db: DbSession):
+    p = profile_repo.get_by_phone(db, phone)
+    if p is None:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    return _to_profile_read(p)
+
+
 @router.delete("/{profile_id}")
 def delete_profile(profile_id: str, db: DbSession):
     try:

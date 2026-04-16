@@ -11,6 +11,7 @@ from api.v1.routes import (
     notifications,
     profiles,
     rag,
+    reminders,
     scan,
     treatment,
 )
@@ -29,3 +30,4 @@ api_router.include_router(medical_records.router)
 api_router.include_router(care.router)
 api_router.include_router(habits.router)
 api_router.include_router(notifications.router)
+api_router.include_router(reminders.router, prefix="/reminders", tags=["reminders"])

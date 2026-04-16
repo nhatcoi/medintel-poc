@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,6 +13,8 @@ import '../treatment/data/treatment_models.dart';
 import '../treatment/data/treatment_provider.dart';
 import 'data/caregiver_profiles_state.dart';
 import 'data/drug_interaction_models.dart';
+import '../treatment/data/notification_provider.dart';
+import 'data/caregiver_ui_model.dart';
 import 'data/drug_interaction_provider.dart';
 import 'widgets/caregiver_top_bar.dart';
 import 'widgets/com_b_insight_card.dart';
@@ -22,7 +25,6 @@ import 'widgets/monitoring_cards_block.dart';
 import 'widgets/patient_monitoring_header.dart';
 import 'widgets/recent_alerts_section.dart';
 
-/// **Care** — theo dõi từ dữ liệu database / cache (cùng nguồn với Home); không dùng mẫu John Doe.
 class CaregiverDashboardPage extends ConsumerStatefulWidget {
   const CaregiverDashboardPage({super.key});
 
@@ -31,8 +33,31 @@ class CaregiverDashboardPage extends ConsumerStatefulWidget {
       _CaregiverDashboardPageState();
 }
 
-class _CaregiverDashboardPageState extends ConsumerState<CaregiverDashboardPage> {
+class _CaregiverDashboardPageState
+    extends ConsumerState<CaregiverDashboardPage> {
   String? _boundProfileId;
+  Timer? _notifTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Fetch notifications on start
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(notificationProvider.notifier).fetchNotifications();
+    });
+    // Poll for new notifications every 15 seconds for "live" feel
+    _notifTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
+      if (mounted) {
+        ref.read(notificationProvider.notifier).fetchNotifications();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _notifTimer?.cancel();
+    super.dispose();
+  }
 
   Future<void> _reloadForActiveProfile() async {
     final profileId = ref.read(activeProfileIdProvider);
@@ -50,16 +75,24 @@ class _CaregiverDashboardPageState extends ConsumerState<CaregiverDashboardPage>
         ? auth.user!.fullName!.trim()
         : l10n.genericYou;
     final authProfileId = auth.user?.id ?? '';
-    ref.read(caregiverProfilesProvider.notifier).syncPrimaryProfile(
-          displayName: primaryName,
-          profileId: authProfileId,
-          localState: local,
-        );
+
+    // Sync current profile to management list
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(caregiverProfilesProvider.notifier).syncPrimaryProfile(
+            displayName: primaryName,
+            profileId: authProfileId,
+            localState: local,
+          );
+    });
+
     final activeProfileId = ref.watch(activeProfileIdProvider);
     if (activeProfileId != _boundProfileId) {
       _boundProfileId = activeProfileId;
-      WidgetsBinding.instance.addPostFrameCallback((_) => _reloadForActiveProfile());
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _reloadForActiveProfile(),
+      );
     }
+
     final profilesState = ref.watch(caregiverProfilesProvider);
     final selectedProfile = profilesState.selectedProfile;
     final treatment = ref.watch(treatmentProvider);
@@ -68,7 +101,11 @@ class _CaregiverDashboardPageState extends ConsumerState<CaregiverDashboardPage>
       logs: treatment.logs,
     );
     final patientName = selectedProfile?.displayName ?? primaryName;
-    final model = DashboardFromLocal.buildCaregiver(selectedLocal, patientName, l10n);
+    final model = DashboardFromLocal.buildCaregiver(
+      selectedLocal,
+      patientName,
+      l10n,
+    );
 
     final comB = computeComBScore(
       meds: treatment.items,
@@ -84,6 +121,7 @@ class _CaregiverDashboardPageState extends ConsumerState<CaregiverDashboardPage>
       nextDose: treatment.nextDose,
       summary7: treatment.summary,
     );
+
     final interactionState = ref.watch(drugInteractionProvider);
     final activeDrugNames = treatment.items
         .where((m) => (m.status ?? 'active').toLowerCase() == 'active')
@@ -91,75 +129,132 @@ class _CaregiverDashboardPageState extends ConsumerState<CaregiverDashboardPage>
         .where((n) => n.isNotEmpty)
         .toList();
 
-    return Scaffold(
-      backgroundColor: VitalisColors.background,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          CaregiverTopBar(displayName: patientName),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.only(bottom: 24),
+    final notificationState = ref.watch(notificationProvider);
+
+    // Listen for new notifications to show a floating snackbar pop-up
+    ref.listen(notificationProvider, (previous, next) {
+      if (previous != null && next.items.length > previous.items.length) {
+        final newNotif = next.items.first;
+        debugPrint('🔔 [NOTIFICATION RECEIVED] ${newNotif.title}');
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Row(
               children: [
-                const SizedBox(height: 8),
-                _ManagedProfilesSection(
-                  profilesState: profilesState,
-                  onSelected: (id) {
-                    ref.read(caregiverProfilesProvider.notifier).selectProfile(id);
-                  },
-                  onAdd: () => _showAddProfileSheet(context, ref),
-                ),
-                const SizedBox(height: 16),
-                PatientMonitoringHeader(
-                  patientName: model.patientName,
-                  onCall: () {},
-                  onMessage: () {},
-                ),
-                const SizedBox(height: 24),
-                MonitoringCardsBlock(
-                  adherenceFraction: model.adherenceFraction,
-                  dosesTaken: model.dosesTaken,
-                  dosesTotal: model.dosesTotal,
-                  weeklyScoreFraction: model.weeklyScoreFraction,
-                  weeklyCaption: model.weeklyCaption,
-                  vitalsHeadline: model.vitalsHeadline,
-                  vitalsSub: model.vitalsSub,
-                ),
-                const SizedBox(height: 20),
-                DrugInteractionSection(
-                  loading: interactionState.loading,
-                  pairs: interactionState.pairs,
-                  error: interactionState.error,
-                  onRefresh: () => ref
-                      .read(drugInteractionProvider.notifier)
-                      .refresh(activeDrugNames),
-                  onAskAi: (pair) => _askAiAboutInteraction(context, pair),
-                ),
-                const SizedBox(height: 20),
-                InteractiveWarningsSection(
-                  warnings: warnings,
-                  onAction: (w) => _handleWarningAction(context, w),
-                ),
-                const SizedBox(height: 20),
-                ComBInsightCard(score: comB),
-                const SizedBox(height: 28),
-                MedicationsSection(
-                  dateChipLabel: model.medicationsDateLabel,
-                  items: model.medications,
-                ),
-                const SizedBox(height: 28),
-                RecentAlertsSection(
-                  alerts: model.alerts,
-                  onActionTap: (alert) {
-                    if (alert.opensAiChat) {
-                      context.goNamed('ai');
-                    }
-                  },
-                ),
+                const Icon(Icons.notifications_active, color: VitalisColors.primary),
+                const SizedBox(width: 8),
+                Text(newNotif.title),
               ],
             ),
+            content: Text(newNotif.message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Đóng'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  context.goNamed('ai');
+                },
+                child: const Text('Xem chi tiết'),
+              ),
+            ],
           ),
-        ],
+        );
+      }
+    });
+
+    final List<CareAlertItem> combinedAlerts = [
+      ...notificationState.items.map(
+        (n) => CareAlertItem(
+          isUrgent: n.type == 'medication_missed',
+          title: n.title,
+          subtitle: n.message,
+          actionLabel: 'Hành động',
+          opensAiChat: true,
+        ),
+      ),
+      ...model.alerts,
+    ];
+
+    return Scaffold(
+      backgroundColor: VitalisColors.background,
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await _reloadForActiveProfile();
+          await ref.read(notificationProvider.notifier).fetchNotifications();
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            CaregiverTopBar(displayName: patientName),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.only(bottom: 60),
+                children: [
+                  const SizedBox(height: 8),
+                  _ManagedProfilesSection(
+                    profilesState: profilesState,
+                    onSelected: (id) {
+                      ref
+                          .read(caregiverProfilesProvider.notifier)
+                          .selectProfile(id);
+                    },
+                    onAdd: () => _showAddProfileSheet(context, ref),
+                  ),
+                  const SizedBox(height: 16),
+                  PatientMonitoringHeader(
+                    patientName: patientName,
+                    onCall: () {},
+                    onMessage: () {},
+                  ),
+                  const SizedBox(height: 24),
+                  MonitoringCardsBlock(
+                    adherenceFraction: model.adherenceFraction,
+                    dosesTaken: model.dosesTaken,
+                    dosesTotal: model.dosesTotal,
+                    weeklyScoreFraction: model.weeklyScoreFraction,
+                    weeklyCaption: model.weeklyCaption,
+                    vitalsHeadline: model.vitalsHeadline,
+                    vitalsSub: model.vitalsSub,
+                  ),
+                  const SizedBox(height: 20),
+                  DrugInteractionSection(
+                    loading: interactionState.loading,
+                    pairs: interactionState.pairs,
+                    error: interactionState.error,
+                    onRefresh: () => ref
+                        .read(drugInteractionProvider.notifier)
+                        .refresh(activeDrugNames),
+                    onAskAi: (pair) => _askAiAboutInteraction(context, pair),
+                  ),
+                  const SizedBox(height: 20),
+                  InteractiveWarningsSection(
+                    warnings: warnings,
+                    onAction: (w) => _handleWarningAction(context, w),
+                  ),
+                  const SizedBox(height: 20),
+                  ComBInsightCard(score: comB),
+                  const SizedBox(height: 28),
+                  MedicationsSection(
+                    dateChipLabel: model.medicationsDateLabel,
+                    items: model.medications,
+                  ),
+                  const SizedBox(height: 28),
+                  RecentAlertsSection(
+                    alerts: combinedAlerts,
+                    onActionTap: (alert) {
+                      if (alert.opensAiChat) {
+                        context.goNamed('ai');
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -176,7 +271,9 @@ class _CaregiverDashboardPageState extends ConsumerState<CaregiverDashboardPage>
             warning.medicationId == null) {
           return;
         }
-        await ref.read(treatmentProvider.notifier).logDose(
+        await ref
+            .read(treatmentProvider.notifier)
+            .logDose(
               profileId: profileId,
               medicationId: warning.medicationId!,
               status: 'taken',
@@ -206,24 +303,18 @@ class _CaregiverDashboardPageState extends ConsumerState<CaregiverDashboardPage>
     }
   }
 
-  void _askAiAboutInteraction(
-    BuildContext context,
-    DrugInteractionPair pair,
-  ) {
-    // Route to AI chat; deep-link payload left for chat page to pick up later.
+  void _askAiAboutInteraction(BuildContext context, DrugInteractionPair pair) {
     context.goNamed('ai');
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         behavior: SnackBarBehavior.floating,
-        content: Text(
-          'Hỏi AI về tương tác ${pair.drugA} × ${pair.drugB}…',
-        ),
+        content: Text('Hỏi AI về tương tác ${pair.drugA} × ${pair.drugB}…'),
       ),
     );
   }
 
   Future<void> _showAddProfileSheet(BuildContext context, WidgetRef ref) async {
-    final nameCtrl = TextEditingController();
+    final phoneCtrl = TextEditingController();
     final relationCtrl = TextEditingController();
     final ok = await showModalBottomSheet<bool>(
       context: context,
@@ -236,10 +327,11 @@ class _CaregiverDashboardPageState extends ConsumerState<CaregiverDashboardPage>
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
-                controller: nameCtrl,
+                controller: phoneCtrl,
+                keyboardType: TextInputType.phone,
                 decoration: const InputDecoration(
-                  labelText: 'Tên profile',
-                  hintText: 'Ví dụ: Bé Na',
+                  labelText: 'Số điện thoại bệnh nhân',
+                  hintText: 'Ví dụ: 0987654321',
                 ),
               ),
               const SizedBox(height: 10),
@@ -255,7 +347,7 @@ class _CaregiverDashboardPageState extends ConsumerState<CaregiverDashboardPage>
                 width: double.infinity,
                 child: FilledButton(
                   onPressed: () => Navigator.pop(ctx, true),
-                  child: const Text('Thêm profile'),
+                  child: const Text('Thêm người bệnh'),
                 ),
               ),
             ],
@@ -265,19 +357,67 @@ class _CaregiverDashboardPageState extends ConsumerState<CaregiverDashboardPage>
     );
 
     if (ok != true) return;
-    final name = nameCtrl.text.trim();
+    final phone = phoneCtrl.text.trim();
     final relation = relationCtrl.text.trim();
-    if (name.isEmpty) return;
-    final created = await ref.read(authRepositoryProvider).createOnboardingProfile(
-          fullName: name,
-          role: 'patient',
+    if (phone.isEmpty) return;
+
+    final authId = ref.read(authProvider).user?.id ?? '';
+    if (authId.isEmpty) return;
+
+    try {
+      final api = ref.read(apiServiceProvider);
+
+      final profileRes = await api.client.get('/api/v1/profiles/phone/$phone');
+      final foundProfileId = profileRes.data['profile_id'];
+      final patientName = profileRes.data['full_name'] ?? 'Bệnh nhân';
+
+      if (foundProfileId == null || foundProfileId.isEmpty) {
+        throw Exception("Profile not found");
+      }
+
+      final groupRes = await api.client.post(
+        '/api/v1/care/groups',
+        data: {
+          'group_name': 'Nhóm chăm sóc $patientName',
+          'description': relation,
+          'created_by_profile_id': authId,
+        },
+      );
+      final groupId = groupRes.data['group_id'];
+
+      await api.client.post(
+        '/api/v1/care/group-patients',
+        data: {
+          'group_id': groupId,
+          'patient_id': foundProfileId,
+          'added_by_profile_id': authId,
+          'consent_status': 'granted',
+        },
+      );
+
+      await api.client.post(
+        '/api/v1/care/group-members',
+        data: {'group_id': groupId, 'profile_id': authId, 'role': 'caregiver'},
+      );
+
+      await ref
+          .read(caregiverProfilesProvider.notifier)
+          .addProfile(
+            profileId: foundProfileId,
+            displayName: patientName,
+            relationshipLabel: relation,
+          );
+    } catch (e) {
+      debugPrint("Care Group Setup Failed: $e");
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Người dùng không tồn tại hoặc có lỗi xảy ra!"),
+            backgroundColor: Colors.red,
+          ),
         );
-    if (created.profileId.isEmpty) return;
-    await ref.read(caregiverProfilesProvider.notifier).addProfile(
-          profileId: created.profileId,
-          displayName: name,
-          relationshipLabel: relation,
-        );
+      }
+    }
   }
 
   LocalMedintelState _localFromTreatment({
@@ -290,7 +430,9 @@ class _CaregiverDashboardPageState extends ConsumerState<CaregiverDashboardPage>
             id: m.medicationId,
             name: m.name,
             dosageLabel: m.dosage,
-            scheduleHint: m.scheduleTimes.isNotEmpty ? m.scheduleTimes.join(', ') : null,
+            scheduleHint: m.scheduleTimes.isNotEmpty
+                ? m.scheduleTimes.join(', ')
+                : null,
           ),
         )
         .toList();
@@ -300,15 +442,13 @@ class _CaregiverDashboardPageState extends ConsumerState<CaregiverDashboardPage>
             id: l.logId,
             medicationName: l.medicationName,
             status: l.status,
-            recordedAtIso: (l.actualDatetime ?? l.scheduledDatetime).toIso8601String(),
+            recordedAtIso: (l.actualDatetime ?? l.scheduledDatetime)
+                .toIso8601String(),
             note: l.notes,
           ),
         )
         .toList();
-    return LocalMedintelState(
-      medications: meds,
-      doseLogs: doseLogs,
-    );
+    return LocalMedintelState(medications: meds, doseLogs: doseLogs);
   }
 }
 
@@ -395,14 +535,17 @@ class _ProfileAvatarItem extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: selected ? 24 : 22,
-            backgroundColor:
-                selected ? VitalisColors.primary : VitalisColors.surfaceContainerLow,
+            backgroundColor: selected
+                ? VitalisColors.primary
+                : VitalisColors.surfaceContainerLow,
             child: Text(
               initial,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
-                color: selected ? Colors.white : VitalisColors.caregiverHeroBlue,
+                color: selected
+                    ? Colors.white
+                    : VitalisColors.caregiverHeroBlue,
               ),
             ),
           ),
@@ -417,7 +560,9 @@ class _ProfileAvatarItem extends StatelessWidget {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: selected ? VitalisColors.primary : VitalisColors.onSurfaceVariant,
+                color: selected
+                    ? VitalisColors.primary
+                    : VitalisColors.onSurfaceVariant,
               ),
             ),
           ),

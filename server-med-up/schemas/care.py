@@ -45,6 +45,7 @@ class CareGroupPatientCreate(BaseModel):
     group_id: str
     patient_id: str
     added_by_profile_id: str
+    consent_status: str | None = "granted"
 
 
 class CareGroupPatientRead(BaseModel):
@@ -53,6 +54,7 @@ class CareGroupPatientRead(BaseModel):
     patient_id: str
     added_by_profile_id: str
     added_at: datetime
+    consent_status: str
 
 
 class CaregiverPatientLinkCreate(BaseModel):
