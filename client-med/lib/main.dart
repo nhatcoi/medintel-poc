@@ -65,6 +65,7 @@ class _MedIntelAppState extends ConsumerState<MedIntelApp> {
     final appLang = ref.watch(appLocaleProvider);
 
     return MaterialApp.router(
+      debugShowCheckedModeBanner: false,
       onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
       theme: AppTheme.light(fontId: DisplayFontIds.inter),
       routerConfig: _router,
